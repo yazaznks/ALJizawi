@@ -14,6 +14,7 @@ import Cart from './pages/Cart';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminProducts from './pages/AdminProducts';
 import AdminOrders from './pages/AdminOrders';
+import Admin from './pages/Admin';
 import PrivateRoute from './components/PrivateRoute';
 import './App.css';
 
@@ -54,6 +55,14 @@ function App() {
                 element={
                   <PrivateRoute adminOnly={true}>
                     <AdminOrders />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/admin/main"
+                element={
+                  <PrivateRoute adminOnly={true}>
+                    <Admin />
                   </PrivateRoute>
                 }
               />
