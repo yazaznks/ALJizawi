@@ -1,14 +1,14 @@
 {
   "files": {
     "main.css": "/AL_Jizawi/static/css/main.10b81a5a.css",
-    "main.js": "/AL_Jizawi/static/js/main.e73a7c29.js",
+    "main.js": "/AL_Jizawi/static/js/main.e47baee0.js",
     "static/media/logo.png": "/AL_Jizawi/static/media/logo.5e2dfc9c992de7d892a8.png",
     "index.html": "/AL_Jizawi/index.html",
     "main.10b81a5a.css.map": "/AL_Jizawi/static/css/main.10b81a5a.css.map",
-    "main.e73a7c29.js.map": "/AL_Jizawi/static/js/main.e73a7c29.js.map"
+    "main.e47baee0.js.map": "/AL_Jizawi/static/js/main.e47baee0.js.map"
   },
   "entrypoints": [
     "static/css/main.10b81a5a.css",
-    "static/js/main.e73a7c29.js"
+    "static/js/main.e47baee0.js"
   ]
 }
