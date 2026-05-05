@@ -1,21 +1,37 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
-import axios from 'axios';
+import { useProducts } from '../context/ProductContext';
 
 const AdminDashboard = () => {
   const { t } = useLanguage();
+  const { products } = useProducts();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchDashboard();
-  }, []);
+  }, [products]);
 
   const fetchDashboard = async () => {
     try {
-      const res = await axios.get('/api/admin/dashboard');
-      setStats(res.data);
+      // Mock dashboard data based on local products
+      const totalProducts = products.filter(p => p.active).length;
+      const lowStockProducts = products.filter(p => p.active && p.stock < 10).length;
+
+      const mockStats = {
+        statistics: {
+          totalOrders: 0, // No orders stored locally
+          pendingOrders: 0,
+          totalRevenue: 0,
+          totalProducts,
+          lowStockProducts,
+          totalCustomers: 0
+        },
+        recentOrders: [] // No orders stored locally
+      };
+
+      setStats(mockStats);
     } catch (error) {
       console.error('Error fetching dashboard:', error);
     } finally {

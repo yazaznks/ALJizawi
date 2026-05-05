@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
-import axios from 'axios';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -130,10 +129,10 @@ const Checkout = () => {
         paymentMethod: 'cash_on_delivery'
       };
 
-      const res = await axios.post('/api/orders', orderData);
+      // Simulate order placement (frontend-only)
+      const orderNumber = `ORD-${Date.now()}`;
 
       // Generate and send WhatsApp message
-      const orderNumber = res.data.order.orderNumber;
       const whatsappMessage = generateWhatsAppMessage(orderData, orderNumber);
       sendWhatsAppMessage(customerInfo.whatsappNumber, whatsappMessage);
 
@@ -144,7 +143,7 @@ const Checkout = () => {
         navigate('/');
       }, 3000);
     } catch (error) {
-      setError(error.response?.data?.message || 'Error placing order');
+      setError('Error placing order');
     } finally {
       setLoading(false);
     }
