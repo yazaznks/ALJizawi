@@ -2,7 +2,6 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import {
   doc,
   setDoc,
-  getDoc,
   onSnapshot
 } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -38,14 +37,31 @@ export const BannerProvider = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
+  // Convert file to base64
+  const fileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = error => reject(error);
+    });
+  };
+
   // Save/update banner
   const saveBanner = async (bannerData) => {
     try {
-      await setDoc(doc(db, 'banner', 'main'), {
+      const data = {
         type: bannerData.type,
         content: bannerData.content,
         active: bannerData.active !== false
-      });
+      };
+
+      // If image file is provided, convert to base64
+      if (bannerData.imageFile) {
+        data.imageData = await fileToBase64(bannerData.imageFile);
+      }
+
+      await setDoc(doc(db, 'banner', 'main'), data);
       return { success: true };
     } catch (error) {
       console.error('Error saving banner:', error);

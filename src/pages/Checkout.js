@@ -57,7 +57,7 @@ const Checkout = () => {
   // Generate WhatsApp message with order details
   const generateWhatsAppMessage = (orderData, orderNumber) => {
     const items = orderData.items.map(item =>
-      `• ${item.name} x ${item.quantity} = $${((item.discountPrice || item.price) * item.quantity).toFixed(2)}`
+      `• ${item.name} x ${item.quantity} = $${((item.discountPercent ? item.price * (100 - item.discountPercent) / 100 : item.price) * item.quantity).toFixed(2)}`
     ).join('\n');
 
     const message = `*طلب جديد - رقم الطلب: ${orderNumber}*\n\n` +
@@ -113,7 +113,7 @@ const Checkout = () => {
           product: item._id,
           name: item.name,
           quantity: item.quantity,
-          price: item.discountPrice || item.price,
+          price: item.discountPercent ? item.price * (100 - item.discountPercent) / 100 : item.price,
           image: item.images && item.images[0]
         })),
         customerInfo,
@@ -257,7 +257,7 @@ const Checkout = () => {
             {cart.map(item => (
               <div key={item._id} style={{padding: '10px 0', borderBottom: '1px solid #ddd'}}>
                 <div>{item.name} x {item.quantity}</div>
-                <div>${((item.discountPrice || item.price) * item.quantity).toFixed(2)}</div>
+                <div>${((item.discountPercent ? item.price * (100 - item.discountPercent) / 100 : item.price) * item.quantity).toFixed(2)}</div>
               </div>
             ))}
             

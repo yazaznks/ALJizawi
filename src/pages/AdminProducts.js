@@ -13,7 +13,7 @@ const AdminProducts = () => {
     name: '',
     description: '',
     price: '',
-    discountPrice: '',
+    discountPercent: '',
     category: '',
     stock: '',
     featured: false,
@@ -37,7 +37,7 @@ const AdminProducts = () => {
       name: product.name,
       description: product.description,
       price: product.price.toString(),
-      discountPrice: product.discountPrice ? product.discountPrice.toString() : '',
+      discountPercent: product.discountPercent ? product.discountPercent.toString() : '',
       category: product.category,
       stock: product.stock.toString(),
       featured: product.featured,
@@ -69,7 +69,7 @@ const AdminProducts = () => {
           name: '',
           description: '',
           price: '',
-          discountPrice: '',
+          discountPercent: '',
           category: '',
           stock: '',
           featured: false,
@@ -90,7 +90,7 @@ const AdminProducts = () => {
       name: '',
       description: '',
           price: '',
-          discountPrice: '',
+          discountPercent: '',
           category: '',
           stock: '',
           featured: false,
@@ -161,13 +161,15 @@ const AdminProducts = () => {
               </div>
 
               <div className="form-group">
-                <label>Discount Price ($) (optional)</label>
+                <label>Discount (%) (optional)</label>
                 <input
                   type="number"
-                  step="0.01"
-                  value={formData.discountPrice}
-                  onChange={(e) => setFormData({...formData, discountPrice: e.target.value})}
-                  placeholder="Leave empty for no discount"
+                  step="1"
+                  min="1"
+                  max="99"
+                  value={formData.discountPercent}
+                  onChange={(e) => setFormData({...formData, discountPercent: e.target.value})}
+                  placeholder="e.g., 50 for 50% off"
                 />
               </div>
 

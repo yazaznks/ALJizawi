@@ -23,7 +23,7 @@ const Cart = () => {
   // Generate WhatsApp message with order details
   const generateWhatsAppMessage = (orderData, orderNumber) => {
     const items = orderData.items.map(item =>
-      `• ${item.name} x ${item.quantity} = $${((item.discountPrice || item.price) * item.quantity).toFixed(2)}`
+      `• ${item.name} x ${item.quantity} = $${((item.discountPercent ? item.price * (100 - item.discountPercent) / 100 : item.price) * item.quantity).toFixed(2)}`
     ).join('\n');
 
     const message = `*طلب جديد - رقم الطلب: ${orderNumber}*\n\n` +
@@ -63,7 +63,7 @@ const Cart = () => {
           product: item._id,
           name: item.name,
           quantity: item.quantity,
-          price: item.discountPrice || item.price,
+          price: item.discountPercent ? item.price * (100 - item.discountPercent) / 100 : item.price,
           image: item.images && item.images[0]
         })),
         customerInfo,
@@ -130,10 +130,10 @@ const Cart = () => {
               <div className="cart-item-info">
                 <h3>{item.name}</h3>
                 <p className="product-price">
-                  {item.discountPrice ? (
+                  {item.discountPercent ? (
                     <>
                       <span style={{textDecoration: 'line-through', color: '#999', marginRight: '6px', fontSize: '14px'}}>${item.price.toFixed(2)}</span>
-                      <span style={{color: '#e74c3c', fontWeight: 'bold'}}>${item.discountPrice.toFixed(2)}</span>
+                      <span style={{color: '#e74c3c', fontWeight: 'bold'}}>${(item.price * (100 - item.discountPercent) / 100).toFixed(2)}</span>
                     </>
                   ) : (
                     `$${item.price.toFixed(2)}`
@@ -213,7 +213,7 @@ const Cart = () => {
                     {cart.map(item => (
                       <div key={item._id} style={{display: 'flex', justifyContent: 'space-between', margin: '5px 0'}}>
                         <span>{item.name} x {item.quantity}</span>
-                        <span>${((item.discountPrice || item.price) * item.quantity).toFixed(2)}</span>
+                        <span>${((item.discountPercent ? item.price * (100 - item.discountPercent) / 100 : item.price) * item.quantity).toFixed(2)}</span>
                       </div>
                     ))}
                     <hr style={{margin: '10px 0'}} />

@@ -22,7 +22,7 @@ const Products = () => {
 
   return (
     <div className="container">
-      {banner && banner.active && banner.content && (
+      {banner && banner.active && (banner.content || banner.imageData) && (
         <div className="banner-ad">
           {banner.type === 'video' ? (
             <div style={{position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', borderRadius: '8px'}}>
@@ -33,6 +33,10 @@ const Products = () => {
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
               />
+            </div>
+          ) : banner.type === 'image' ? (
+            <div style={{marginBottom: '20px', borderRadius: '8px', overflow: 'hidden'}}>
+              <img src={banner.imageData} alt="Banner" style={{width: '100%', maxHeight: '400px', objectFit: 'cover', borderRadius: '8px'}} />
             </div>
           ) : (
             <div className="banner-text" style={{background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', padding: '30px', borderRadius: '8px', textAlign: 'center', fontSize: '24px', fontWeight: 'bold', marginBottom: '20px'}}>
@@ -56,10 +60,10 @@ const Products = () => {
               <div className="product-info">
                 <div className="product-name">{product.name}</div>
                 <div className="product-price">
-                  {product.discountPrice ? (
+                  {product.discountPercent ? (
                     <>
                       <span style={{textDecoration: 'line-through', color: '#999', marginRight: '8px'}}>${product.price.toFixed(2)}</span>
-                      <span style={{color: '#e74c3c', fontWeight: 'bold'}}>${product.discountPrice.toFixed(2)}</span>
+                      <span style={{color: '#e74c3c', fontWeight: 'bold'}}>${(product.price * (100 - product.discountPercent) / 100).toFixed(2)}</span>
                     </>
                   ) : (
                     `$${product.price.toFixed(2)}`

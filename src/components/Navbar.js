@@ -57,13 +57,9 @@ const Navbar = () => {
           )}
            {user && (
              <>
-               {isAdmin && (
-                 <>
-                   <li><Link to="/admin" onClick={closeMenu}>{t('admin')}</Link></li>
-                   <li><Link to="/admin/main" onClick={closeMenu}>Admin Panel</Link></li>
-                 </>
-               )}
-               <li><span>{language === 'ar' ? 'مرحباً' : 'Hi'}, {user.name}</span></li>
+               <li><Link to="/admin" onClick={closeMenu}>{t('admin')}</Link></li>
+               <li><Link to="/admin/main" onClick={closeMenu}>Admin Panel</Link></li>
+               <li><span>{language === 'ar' ? 'مرحباً' : 'Hi'}, {user.email}</span></li>
                <li><button onClick={() => { logout(); closeMenu(); }} className="btn-secondary" style={{padding: '5px 15px'}}>{t('logout')}</button></li>
              </>
            )}
