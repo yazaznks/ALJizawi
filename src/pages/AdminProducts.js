@@ -6,7 +6,7 @@ import { useLanguage } from '../context/LanguageContext';
 
 const AdminProducts = () => {
  const { t } = useLanguage();
-  const { products, loading, createProduct, updateProduct, deleteProduct, removeProductImage } = useProducts();
+  const { products, loading, createProduct, updateProduct, deleteProduct } = useProducts();
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [formData, setFormData] = useState({

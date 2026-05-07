@@ -88,7 +88,7 @@ const translations = {
     // Auth
     email: 'البريد الإلكتروني',
     password: 'كلمة المرور',
-    phone: 'رقم الهاتف',
+  
     fullName: 'الاسم الكامل',
     signIn: 'تسجيل الدخول',
     signUp: 'إنشاء حساب',
@@ -320,7 +320,7 @@ const translations = {
     
     // Admin Orders
     loadingOrders: 'Loading orders...',
-    phone: 'Phone',
+
     whatsapp: '💬 WhatsApp',
     pending: 'Pending',
     confirmed: 'Confirmed',

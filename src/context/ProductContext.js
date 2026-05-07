@@ -3,13 +3,13 @@ import {
   collection,
   addDoc,
   updateDoc,
-  deleteDoc,
+ //deleteDoc,
   doc,
-  getDocs,
+  //getDocs,
   onSnapshot,
   query,
-  orderBy,
-  where
+  orderBy
+ // where
 } from 'firebase/firestore';
 import { db } from '../firebase';
 

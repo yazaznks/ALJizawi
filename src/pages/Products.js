@@ -7,7 +7,7 @@ const Products = () => {
   const { t } = useLanguage();
   const { getProducts, loading } = useProducts();
   const [products, setProducts] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage] = useState(1);
 
   useEffect(() => {
     loadProducts();
