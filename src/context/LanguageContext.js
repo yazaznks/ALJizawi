@@ -20,6 +20,7 @@ const translations = {
     register: 'التسجيل',
     logout: 'تسجيل الخروج',
     admin: 'لوحة التحكم',
+    ads: 'الإعلانات',
     
     // Admin
     dashboard: 'لوحة التحكم',
@@ -182,6 +183,7 @@ const translations = {
     register: 'Register',
     logout: 'Logout',
     admin: 'Admin',
+    ads: 'Ads',
     
     // Admin
     dashboard: 'Dashboard',
