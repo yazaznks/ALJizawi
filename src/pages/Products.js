@@ -10,13 +10,11 @@ const Products = () => {
   const [currentPage] = useState(1);
 
   useEffect(() => {
-    loadProducts();
-  }, [currentPage]);
-
-  const loadProducts = () => {
-    const result = getProducts({ page: currentPage, limit: 12 });
-    setProducts(result.products);
-  };
+    if (!loading) {
+      const result = getProducts({ page: currentPage, limit: 12 });
+      setProducts(result.products);
+    }
+  }, [currentPage, loading]);
 
   if (loading) return <div className="loading">{t('loadingProducts')}</div>;
 
