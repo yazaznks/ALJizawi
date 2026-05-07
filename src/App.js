@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext';
 import { ProductProvider } from './context/ProductContext';
 import { CartProvider } from './context/CartContext';
 import { LanguageProvider } from './context/LanguageContext';
+import { BannerProvider } from './context/BannerContext';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Products from './pages/Products';
@@ -24,6 +25,7 @@ function App() {
       <AuthProvider>
         <ProductProvider>
           <CartProvider>
+            <BannerProvider>
             <Router>
             <div className="App">
               <Navbar />
@@ -69,6 +71,7 @@ function App() {
               </Routes>
             </div>
           </Router>
+        </BannerProvider>
         </CartProvider>
         </ProductProvider>
       </AuthProvider>

@@ -47,6 +47,7 @@ const Navbar = () => {
           <span></span>
         </button>
         <ul className={`navbar-nav ${isMenuOpen ? 'active' : ''}`}>
+          <li><Link to="/products" onClick={closeMenu}>{t('home')}</Link></li>
           {getCartCount() > 0 && (
             <li>
               <Link to="/cart" onClick={closeMenu}>

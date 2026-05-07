@@ -59,7 +59,10 @@ export const CartProvider = ({ children }) => {
   };
 
   const getCartTotal = () => {
-    return cart.reduce((total, item) => total + item.price * item.quantity, 0);
+    return cart.reduce((total, item) => {
+      const itemPrice = item.discountPrice || item.price;
+      return total + itemPrice * item.quantity;
+    }, 0);
   };
 
   const getCartCount = () => {

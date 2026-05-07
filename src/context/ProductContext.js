@@ -40,6 +40,7 @@ export const ProductProvider = ({ children }) => {
           ...doc.data(),
           // Ensure proper data types
           price: parseFloat(doc.data().price) || 0,
+          discountPrice: doc.data().discountPrice ? parseFloat(doc.data().discountPrice) : null,
           stock: parseInt(doc.data().stock) || 0,
           weight: parseFloat(doc.data().weight) || 0,
           featured: doc.data().featured === true,
@@ -99,6 +100,7 @@ export const ProductProvider = ({ children }) => {
         name: productData.name,
         description: productData.description,
         price: parseFloat(productData.price),
+        discountPrice: productData.discountPrice ? parseFloat(productData.discountPrice) : null,
         category: productData.category,
         stock: parseInt(productData.stock),
         featured: productData.featured === 'true' || productData.featured === true,
@@ -147,6 +149,7 @@ export const ProductProvider = ({ children }) => {
         name: productData.name,
         description: productData.description,
         price: parseFloat(productData.price),
+        discountPrice: productData.discountPrice ? parseFloat(productData.discountPrice) : null,
         category: productData.category,
         stock: parseInt(productData.stock),
         featured: productData.featured === 'true' || productData.featured === true,

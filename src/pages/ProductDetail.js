@@ -35,28 +35,35 @@ const ProductDetail = () => {
 
   return (
     <div className="container">
-      <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px'}}>
-        <div>
-          <div className="product-image" style={{height: '400px', borderRadius: '8px'}}>
-            {product.images && product.images[0] ? (
-              <img src={product.images[0].url} alt={product.name} style={{width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px'}} />
-                ) : (
-                  <span>{t('noImage')}</span>
-            )}
-          </div>
+      <div className="card" style={{maxWidth: '600px', margin: '0 auto'}}>
+        <div className="product-image" style={{width: '100%', maxHeight: '500px', borderRadius: '8px 8px 0 0', overflow: 'hidden'}}>
+          {product.images && product.images[0] ? (
+            <img src={product.images[0].url} alt={product.name} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+          ) : (
+            <span>{t('noImage')}</span>
+          )}
         </div>
         
-        <div className="card">
+        <div style={{padding: '20px'}}>
           <h1>{product.name}</h1>
-          <div className="product-price" style={{fontSize: '32px', margin: '20px 0'}}>${product.price.toFixed(2)}</div>
+          <div className="product-price" style={{fontSize: '28px', margin: '15px 0'}}>
+            {product.discountPrice ? (
+              <>
+                <span style={{textDecoration: 'line-through', color: '#999', fontSize: '20px', marginRight: '10px'}}>${product.price.toFixed(2)}</span>
+                <span style={{color: '#e74c3c', fontWeight: 'bold'}}>${product.discountPrice.toFixed(2)}</span>
+              </>
+            ) : (
+              `$${product.price.toFixed(2)}`
+            )}
+          </div>
           <p style={{color: '#666', lineHeight: '1.6'}}>{product.description}</p>
           
-          <div style={{margin: '20px 0'}}>
+          <div style={{margin: '15px 0'}}>
             <strong>{t('category')}:</strong> {product.category}<br />
             <strong>{t('stock')}:</strong> {product.stock} {t('available')}
           </div>
           
-          <div style={{marginTop: '30px'}}>
+          <div style={{marginTop: '20px'}}>
             <label><strong>{t('quantity')}:</strong></label>
             <div style={{display: 'flex', gap: '10px', marginTop: '10px'}}>
               <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="btn-secondary">-</button>
