@@ -38,7 +38,7 @@ const Navbar = () => {
   return (
     <nav className="navbar ">
       <div className="container">
-        <Link to="/" className="navbar-brand" >
+        <Link to="/products" className="navbar-brand" >
           <img src={logo} alt="Logo" style={{ height: "250px", marginBottom:"-15px"  }}/>
         </Link>
         <button className={`hamburger ${isMenuOpen ? 'active' : ''}`} onClick={toggleMenu}>
@@ -47,13 +47,13 @@ const Navbar = () => {
           <span></span>
         </button>
         <ul className={`navbar-nav ${isMenuOpen ? 'active' : ''}`}>
-          <li><Link to="/" onClick={closeMenu}>{t('home')}</Link></li>
-          <li><Link to="/products" onClick={closeMenu}>{t('products')}</Link></li>
-          <li>
-            <Link to="/cart" onClick={closeMenu}>
-              {t('cart')} {getCartCount() > 0 && <span className="cart-badge">{getCartCount()}</span>}
-            </Link>
-          </li>
+          {getCartCount() > 0 && (
+            <li>
+              <Link to="/cart" onClick={closeMenu}>
+                {t('cart')} <span className="cart-badge">{getCartCount()}</span>
+              </Link>
+            </li>
+          )}
            {user && (
              <>
                {isAdmin && (
