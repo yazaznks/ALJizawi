@@ -1,34 +1,40 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useBanner } from '../context/BannerContext';
-//import { useLanguage } from '../context/LanguageContext';
 
 const Admin = () => {
-  //const { t } = useLanguage();
-  const { banner, saveBanner } = useBanner();
-  const [bannerType, setBannerType] = useState(banner?.type || 'text');
-  const [bannerContent, setBannerContent] = useState(banner?.content || '');
+  const { banners, addBanner, deleteBanner } = useBanner();
+  const [bannerType, setBannerType] = useState('text');
+  const [bannerContent, setBannerContent] = useState('');
   const [bannerImageFile, setBannerImageFile] = useState(null);
-  const [bannerActive, setBannerActive] = useState(banner?.active !== false);
-  const [saving, setSaving] = useState(false);
+  const [adding, setAdding] = useState(false);
   const [message, setMessage] = useState('');
 
-  const handleSaveBanner = async (e) => {
+  const handleAddBanner = async (e) => {
     e.preventDefault();
-    setSaving(true);
+    setAdding(true);
     setMessage('');
-    const result = await saveBanner({
+    const result = await addBanner({
       type: bannerType,
       content: bannerContent,
-      active: bannerActive,
+      active: true,
       imageFile: bannerImageFile
     });
     if (result.success) {
-      setMessage('Banner saved successfully!');
+      setMessage('Banner added successfully!');
+      setBannerType('text');
+      setBannerContent('');
+      setBannerImageFile(null);
     } else {
-      setMessage('Error saving banner: ' + result.message);
+      setMessage('Error adding banner: ' + result.message);
     }
-    setSaving(false);
+    setAdding(false);
+  };
+
+  const handleDeleteBanner = async (id) => {
+    if (window.confirm('Delete this banner?')) {
+      await deleteBanner(id);
+    }
   };
 
   return (
@@ -67,10 +73,10 @@ const Admin = () => {
       </div>
 
       <div className="card" style={{marginTop: '30px'}}>
-        <h2>Manage Banner Ad</h2>
-        <p>Set a banner ad that appears at the top of the products page.</p>
+        <h2>Manage Banners</h2>
+        <p>Add banners that appear at the top of the products page in a sliding carousel.</p>
 
-        <form onSubmit={handleSaveBanner}>
+        <form onSubmit={handleAddBanner}>
           <div className="form-group">
             <label>Banner Type</label>
             <select value={bannerType} onChange={(e) => { setBannerType(e.target.value); setBannerImageFile(null); }}>
@@ -105,11 +111,6 @@ const Admin = () => {
                 {bannerImageFile && (
                   <p style={{marginTop: '8px', fontSize: '14px', color: '#666'}}>Selected: {bannerImageFile.name}</p>
                 )}
-                {banner?.imageData && !bannerImageFile && (
-                  <div style={{marginTop: '8px'}}>
-                    <img src={banner.imageData} alt="Current banner" style={{maxWidth: '100%', maxHeight: '200px', borderRadius: '8px'}} />
-                  </div>
-                )}
               </>
             ) : (
               <>
@@ -124,50 +125,40 @@ const Admin = () => {
             )}
           </div>
 
-          <div className="form-group">
-            <label>
-              <input
-                type="checkbox"
-                checked={bannerActive}
-                onChange={(e) => setBannerActive(e.target.checked)}
-                style={{width: 'auto', marginRight: '10px'}}
-              />
-              Active
-            </label>
-          </div>
-
           {message && (
             <p style={{color: message.includes('Error') ? 'red' : 'green', marginBottom: '10px'}}>{message}</p>
           )}
 
-          <button type="submit" className="btn-primary" disabled={saving}>
-            {saving ? 'Saving...' : 'Save Banner'}
+          <button type="submit" className="btn-primary" disabled={adding}>
+            {adding ? 'Adding...' : 'Add Banner'}
           </button>
         </form>
 
-        {banner && (banner.content || banner.imageData) && (
-          <div style={{marginTop: '20px', padding: '15px', background: '#f5f5f5', borderRadius: '8px'}}>
-            <h3>Preview</h3>
-            {banner.type === 'video' ? (
-              <div style={{position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', borderRadius: '8px', marginTop: '10px'}}>
-                <iframe
-                  src={banner.content}
-                  title="Banner Preview"
-                  style={{position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none'}}
-                  allowFullScreen
-                />
-              </div>
-            ) : banner.type === 'image' ? (
-              <div style={{marginTop: '10px'}}>
-                <img src={banner.imageData} alt="Banner" style={{maxWidth: '100%', maxHeight: '300px', borderRadius: '8px'}} />
-              </div>
-            ) : (
-              <div style={{background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', padding: '20px', borderRadius: '8px', textAlign: 'center', fontSize: '20px', fontWeight: 'bold', marginTop: '10px'}}>
-                {banner.content}
-              </div>
-            )}
-          </div>
-        )}
+        <div style={{marginTop: '30px'}}>
+          <h3>Current Banners ({banners.filter(b => b.active).length} active)</h3>
+          {banners.length === 0 ? (
+            <p style={{color: '#666'}}>No banners yet. Add one above.</p>
+          ) : (
+            <div style={{display: 'flex', flexDirection: 'column', gap: '15px', marginTop: '15px'}}>
+              {banners.map(banner => (
+                <div key={banner.id} style={{padding: '15px', border: '1px solid #ddd', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                  <div style={{flex: 1}}>
+                    <strong>{banner.type}</strong>
+                    {banner.type === 'video' && <span style={{marginLeft: '10px', color: '#666'}}>{banner.content}</span>}
+                    {banner.type === 'text' && <span style={{marginLeft: '10px', color: '#666'}}>{banner.content}</span>}
+                    {banner.type === 'image' && banner.imageData && (
+                      <img src={banner.imageData} alt="Banner" style={{maxWidth: '100px', maxHeight: '50px', objectFit: 'cover', borderRadius: '4px', marginLeft: '10px'}} />
+                    )}
+                    <span style={{marginLeft: '10px', padding: '3px 8px', borderRadius: '4px', fontSize: '12px', background: banner.active ? '#28a745' : '#dc3545', color: 'white'}}>
+                      {banner.active ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+                  <button onClick={() => handleDeleteBanner(banner.id)} className="btn-danger" style={{padding: '5px 10px'}}>Delete</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

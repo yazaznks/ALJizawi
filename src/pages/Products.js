@@ -7,7 +7,26 @@ import { useLanguage } from '../context/LanguageContext';
 const Products = () => {
   const { t } = useLanguage();
   const { getProducts, loading } = useProducts();
-  const { banner } = useBanner();
+  const { banners } = useBanner();
+  const [currentBanner, setCurrentBanner] = useState(0);
+
+  const activeBanners = banners.filter(b => b.active);
+
+  useEffect(() => {
+    if (activeBanners.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentBanner(prev => (prev + 1) % activeBanners.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [activeBanners.length]);
+
+  const prevBanner = () => {
+    setCurrentBanner(prev => (prev - 1 + activeBanners.length) % activeBanners.length);
+  };
+
+  const nextBanner = () => {
+    setCurrentBanner(prev => (prev + 1) % activeBanners.length);
+  };
   const [products, setProducts] = useState([]);
   const [currentPage] = useState(1);
 
@@ -22,26 +41,37 @@ const Products = () => {
 
   return (
     <div className="container">
-      {banner && banner.active && (banner.content || banner.imageData) && (
-        <div className="banner-ad">
-          {banner.type === 'video' ? (
+      {activeBanners.length > 0 && (
+        <div className="banner-carousel" style={{position: 'relative', marginBottom: '20px'}}>
+          {activeBanners[currentBanner].type === 'video' ? (
             <div style={{position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', borderRadius: '8px'}}>
               <iframe
-                src={banner.content}
+                src={activeBanners[currentBanner].content}
                 title="Banner Ad"
                 style={{position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none'}}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
               />
             </div>
-          ) : banner.type === 'image' ? (
-            <div style={{marginBottom: '20px', borderRadius: '8px', overflow: 'hidden'}}>
-              <img src={banner.imageData} alt="Banner" style={{width: '100%', maxHeight: '400px', objectFit: 'cover', borderRadius: '8px'}} />
+          ) : activeBanners[currentBanner].type === 'image' ? (
+            <div style={{borderRadius: '8px', overflow: 'hidden'}}>
+              <img src={activeBanners[currentBanner].imageData} alt="Banner" style={{width: '100%', maxHeight: '400px', objectFit: 'cover', borderRadius: '8px'}} />
             </div>
           ) : (
-            <div className="banner-text" style={{background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', padding: '30px', borderRadius: '8px', textAlign: 'center', fontSize: '24px', fontWeight: 'bold', marginBottom: '20px'}}>
-              {banner.content}
+            <div className="banner-text" style={{background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', padding: '30px', borderRadius: '8px', textAlign: 'center', fontSize: '24px', fontWeight: 'bold'}}>
+              {activeBanners[currentBanner].content}
             </div>
+          )}
+          {activeBanners.length > 1 && (
+            <>
+              <button onClick={prevBanner} style={{position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', borderRadius: '50%', width: '40px', height: '40px', fontSize: '20px', cursor: 'pointer', zIndex: 2}}>❮</button>
+              <button onClick={nextBanner} style={{position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', borderRadius: '50%', width: '40px', height: '40px', fontSize: '20px', cursor: 'pointer', zIndex: 2}}>❯</button>
+              <div style={{position: 'absolute', bottom: '10px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '8px', zIndex: 2}}>
+                {activeBanners.map((_, i) => (
+                  <button key={i} onClick={() => setCurrentBanner(i)} style={{width: '12px', height: '12px', borderRadius: '50%', border: 'none', background: i === currentBanner ? 'white' : 'rgba(255,255,255,0.5)', cursor: 'pointer'}} />
+                ))}
+              </div>
+            </>
           )}
         </div>
       )}
