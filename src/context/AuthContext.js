@@ -1,59 +1,64 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect } from "react";
+import {
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signOut
+} from "firebase/auth";
+import { auth } from "../firebase";
 
 const AuthContext = createContext();
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
+    throw new Error("useAuth must be used within AuthProvider");
   }
   return context;
 };
 
-// Hardcoded admin credentials
-const ADMIN_EMAIL = 'mahmoud@jizawi.com';
-const ADMIN_PASSWORD = 'MD@123';
-
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
+  // Listen to Firebase auth state
   useEffect(() => {
-    // Check if user is already logged in (stored in localStorage)
-    const savedUser = localStorage.getItem('adminUser');
-    if (savedUser) {
-      try {
-        const parsedUser = JSON.parse(savedUser);
-        setUser(parsedUser);
-      } catch (error) {
-        console.error('Error loading saved user:', error);
-        localStorage.removeItem('adminUser');
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        setUser(firebaseUser);
+
+        // 🔐 ADMIN CHECK (temporary simple version)
+        // Later you will replace this with custom claims
+        const adminEmails = ["mahmoud@jizawi.com"];
+
+        setIsAdmin(adminEmails.includes(firebaseUser.email));
+      } else {
+        setUser(null);
+        setIsAdmin(false);
       }
-    }
-    setLoading(false);
+
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
+  // LOGIN
   const login = async (email, password) => {
-    // Simple hardcoded authentication
-    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-      const adminUser = {
-        id: 'admin-001',
-        name: 'Administrator',
-        email: ADMIN_EMAIL,
-        role: 'admin'
+    try {
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      return { success: true, user: result.user };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message
       };
-
-      localStorage.setItem('adminUser', JSON.stringify(adminUser));
-      setUser(adminUser);
-      return { success: true, user: adminUser };
-    } else {
-      throw new Error('Invalid email or password');
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('adminUser');
-    setUser(null);
+  // LOGOUT
+  const logout = async () => {
+    await signOut(auth);
   };
 
   const value = {
@@ -62,8 +67,12 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     isAuthenticated: !!user,
-    isAdmin: !!user // Since there's only one user, they're always admin if logged in
+    isAdmin
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {!loading && children}
+    </AuthContext.Provider>
+  );
 };
