@@ -1,0 +1,32 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Products collection - read access for all, write access for authenticated users only
+    match /ecommerce_products/{productId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+      allow update: if request.auth != null;
+      allow delete: if request.auth != null;
+    }
+
+    // Orders collection - read/write access for authenticated users only
+    match /ecommerce_orders/{orderId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+      allow update: if request.auth != null;
+      allow delete: if request.auth != null;
+    }
+
+    // Users collection (if needed in future)
+    match /ecommerce_users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null;
+    }
+
+    // Categories collection (if needed)
+    match /ecommerce_categories/{categoryId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+  }
+}

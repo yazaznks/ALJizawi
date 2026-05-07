@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
+import { collection, addDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -129,8 +131,16 @@ const Checkout = () => {
         paymentMethod: 'cash_on_delivery'
       };
 
-      // Simulate order placement (frontend-only)
+      // Save order to Firebase
       const orderNumber = `ORD-${Date.now()}`;
+      const orderWithNumber = {
+        ...orderData,
+        orderNumber,
+        status: 'pending',
+        createdAt: new Date().toISOString()
+      };
+
+      await addDoc(collection(db, 'ecommerce_orders'), orderWithNumber);
 
       // Generate and send WhatsApp message
       const whatsappMessage = generateWhatsAppMessage(orderData, orderNumber);

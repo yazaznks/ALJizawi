@@ -2,42 +2,56 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { useProducts } from '../context/ProductContext';
+import { collection, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
+import { db } from '../firebase';
 
 const AdminDashboard = () => {
   const { t } = useLanguage();
   const { products } = useProducts();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [orders, setOrders] = useState([]);
 
   useEffect(() => {
-    fetchDashboard();
-  }, [products]);
+    // Listen to orders collection
+    const ordersQuery = query(collection(db, 'ecommerce_orders'), orderBy('createdAt', 'desc'), limit(10));
+    const unsubscribeOrders = onSnapshot(ordersQuery, (querySnapshot) => {
+      const ordersData = [];
+      querySnapshot.forEach((doc) => {
+        ordersData.push({ id: doc.id, ...doc.data() });
+      });
+      setOrders(ordersData);
+    });
 
-  const fetchDashboard = async () => {
-    try {
-      // Mock dashboard data based on local products
+    // Calculate stats when products or orders change
+    const calculateStats = () => {
       const totalProducts = products.filter(p => p.active).length;
       const lowStockProducts = products.filter(p => p.active && p.stock < 10).length;
 
-      const mockStats = {
+      const totalOrders = orders.length;
+      const pendingOrders = orders.filter(o => o.status === 'pending').length;
+      const totalRevenue = orders.reduce((sum, order) => sum + order.pricing.total, 0);
+
+      const statsData = {
         statistics: {
-          totalOrders: 0, // No orders stored locally
-          pendingOrders: 0,
-          totalRevenue: 0,
+          totalOrders,
+          pendingOrders,
+          totalRevenue,
           totalProducts,
           lowStockProducts,
-          totalCustomers: 0
+          totalCustomers: new Set(orders.map(o => o.customerInfo.phone)).size
         },
-        recentOrders: [] // No orders stored locally
+        recentOrders: orders.slice(0, 5)
       };
 
-      setStats(mockStats);
-    } catch (error) {
-      console.error('Error fetching dashboard:', error);
-    } finally {
+      setStats(statsData);
       setLoading(false);
-    }
-  };
+    };
+
+    calculateStats();
+
+    return () => unsubscribeOrders();
+  }, [products, orders]);
 
   if (loading) return <div className="loading">{t('loadingDashboard')}</div>;
 

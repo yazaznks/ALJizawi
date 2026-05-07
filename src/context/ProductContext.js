@@ -1,4 +1,17 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import {
+  collection,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+  getDocs,
+  onSnapshot,
+  query,
+  orderBy,
+  where
+} from 'firebase/firestore';
+import { db } from '../firebase';
 
 const ProductContext = createContext();
 
@@ -12,29 +25,37 @@ export const useProducts = () => {
 
 export const ProductProvider = ({ children }) => {
   const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState([]);
 
-  // Load products from localStorage on mount
+  // Load products from Firebase on mount with real-time updates
   useEffect(() => {
-    const savedProducts = localStorage.getItem('products');
-    if (savedProducts) {
-      try {
-        const parsedProducts = JSON.parse(savedProducts);
-        setProducts(parsedProducts);
-        updateCategories(parsedProducts);
-      } catch (error) {
-        console.error('Error loading products from localStorage:', error);
-        setProducts([]);
-      }
-    }
-  }, []);
+    const q = query(collection(db, 'ecommerce_products'), orderBy('createdAt', 'desc'));
 
-  // Save products to localStorage whenever products change
-  useEffect(() => {
-    localStorage.setItem('products', JSON.stringify(products));
-    updateCategories(products);
-  }, [products]);
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const productsData = [];
+      querySnapshot.forEach((doc) => {
+        productsData.push({
+          id: doc.id,
+          ...doc.data(),
+          // Ensure proper data types
+          price: parseFloat(doc.data().price) || 0,
+          stock: parseInt(doc.data().stock) || 0,
+          weight: parseFloat(doc.data().weight) || 0,
+          featured: doc.data().featured === true,
+          active: doc.data().active !== false // Default to true
+        });
+      });
+      setProducts(productsData);
+      updateCategories(productsData);
+      setLoading(false);
+    }, (error) => {
+      console.error('Error loading products:', error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const updateCategories = (productList) => {
     const uniqueCategories = [...new Set(productList.map(p => p.category).filter(Boolean))];
@@ -87,7 +108,9 @@ export const ProductProvider = ({ children }) => {
         createdAt: new Date().toISOString()
       };
 
-      setProducts(prev => [...prev, newProduct]);
+      // Add to Firebase
+      await addDoc(collection(db, 'ecommerce_products'), newProduct);
+
       return { success: true, product: newProduct };
     } catch (error) {
       console.error('Error creating product:', error);
@@ -131,7 +154,9 @@ export const ProductProvider = ({ children }) => {
         images: [...existingProduct.images, ...newImages] // Append new images
       };
 
-      setProducts(prev => prev.map(p => p._id === id ? updatedProduct : p));
+      // Update in Firebase
+      await updateDoc(doc(db, 'ecommerce_products', existingProduct.id), updatedProduct);
+
       return { success: true, product: updatedProduct };
     } catch (error) {
       console.error('Error updating product:', error);
@@ -142,11 +167,23 @@ export const ProductProvider = ({ children }) => {
   };
 
   // Delete product (soft delete)
-  const deleteProduct = (id) => {
-    setProducts(prev => prev.map(p =>
-      p._id === id ? { ...p, active: false } : p
-    ));
-    return { success: true };
+  const deleteProduct = async (id) => {
+    try {
+      const existingProduct = products.find(p => p._id === id);
+      if (!existingProduct) {
+        throw new Error('Product not found');
+      }
+
+      const updatedProduct = { ...existingProduct, active: false };
+
+      // Update in Firebase
+      await updateDoc(doc(db, 'ecommerce_products', existingProduct.id), updatedProduct);
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      return { success: false, message: error.message };
+    }
   };
 
   // Get product by ID
