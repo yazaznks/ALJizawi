@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useProducts } from '../context/ProductContext';
-import { useAuth } from '../context/AuthContext';
-import { useLanguage } from '../context/LanguageContext';
+//import { useAuth } from '../context/AuthContext';
+//import { useLanguage } from '../context/LanguageContext';
 
 const AdminProducts = () => {
-  const { t } = useLanguage();
+ // const { t } = useLanguage();
   const { products, loading, createProduct, updateProduct, deleteProduct, removeProductImage } = useProducts();
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -94,11 +94,11 @@ const AdminProducts = () => {
     });
   };
 
-  const handleRemoveImage = (productId, imageIndex) => {
-    if (window.confirm('Remove this image?')) {
-      removeProductImage(productId, imageIndex);
-    }
-  };
+  // const handleRemoveImage = (productId, imageIndex) => {
+  //   if (window.confirm('Remove this image?')) {
+  //     removeProductImage(productId, imageIndex);
+  //   }
+  // };
 
   if (loading) return <div className="loading">{t('loadingProducts')}</div>;
 

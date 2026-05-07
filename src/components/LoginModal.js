@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useLanguage } from '../context/LanguageContext';
+//import { useLanguage } from '../context/LanguageContext';
 
 const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
   const { login } = useAuth();
-  const { t } = useLanguage();
+  //const { t } = useLanguage();
   const [credentials, setCredentials] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
