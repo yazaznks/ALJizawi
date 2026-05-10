@@ -20,9 +20,9 @@ const AdminProducts = () => {
     images: []
   });
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (firestoreId, customId) => {
     if (window.confirm(t('deleteConfirm'))) {
-      const result = await deleteProduct(id);
+      const result = await deleteProduct(firestoreId, customId);
       if (result.success) {
         alert(t('productDeleted'));
       } else {
@@ -287,7 +287,7 @@ const AdminProducts = () => {
                 <td>{product.active ? t('active') : t('inactive')}</td>
                 <td>
                   <button onClick={() => handleEdit(product)} className="btn-secondary" style={{padding: '5px 10px', marginRight: '5px'}}>{t('edit')}</button>
-                  <button onClick={() => handleDelete(product._id)} className="btn-danger" style={{padding: '5px 10px'}}>{t('delete')}</button>
+                  <button onClick={() => handleDelete(product.id, product._id)} className="btn-danger" style={{padding: '5px 10px'}}>{t('delete')}</button>
                 </td>
               </tr>
             ))}

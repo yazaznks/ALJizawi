@@ -170,15 +170,14 @@ export const ProductProvider = ({ children }) => {
   };
 
   // Delete product permanently from Firestore
-  const deleteProduct = async (id) => {
+  const deleteProduct = async (firestoreId, customId) => {
     try {
-      const existingProduct = products.find(p => p._id === id);
-      if (!existingProduct) {
-        throw new Error('Product not found');
+      // Use the Firestore document ID directly to delete
+      if (firestoreId) {
+        await deleteDoc(doc(db, 'ecommerce_products', firestoreId));
+      } else {
+        throw new Error('Firestore document ID not found');
       }
-
-      // Permanently delete from Firestore
-      await deleteDoc(doc(db, 'ecommerce_products', existingProduct.id));
 
       return { success: true };
     } catch (error) {
