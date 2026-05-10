@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
+import { collection, addDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 
 const Cart = () => {
+  const navigate = useNavigate();
   const { cart, removeFromCart, updateQuantity, getCartTotal, clearCart } = useCart();
   const { t } = useLanguage();
   const [showOrderForm, setShowOrderForm] = useState(false);
@@ -11,43 +14,28 @@ const Cart = () => {
     name: '',
     phone: ''
   });
+  const [shippingAddress, setShippingAddress] = useState({
+    governorate: '',
+    street: '',
+    building: ''
+  });
   const [loading, setLoading] = useState(false);
 
-  // Generate order number
-  const generateOrderNumber = () => {
-    const timestamp = Date.now().toString().slice(-6);
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-    return `ORD-${timestamp}${random}`;
-  };
-
-  // Generate WhatsApp message with order details
-  const generateWhatsAppMessage = (orderData, orderNumber) => {
-    const items = orderData.items.map(item =>
-      `• ${item.name} x ${item.quantity} = $${((item.discountPercent ? item.price * (100 - item.discountPercent) / 100 : item.price) * item.quantity).toFixed(2)}`
-    ).join('\n');
-
-    const message = `*طلب جديد - رقم الطلب: ${orderNumber}*\n\n` +
-      `*معلومات العميل:*\n` +
-      `الاسم: ${orderData.customerInfo.name}\n` +
-      `الهاتف: ${orderData.customerInfo.phone}\n\n` +
-      `*تفاصيل الطلب:*\n${items}\n\n` +
-      `*الأسعار:*\n` +
-      `المجموع الفرعي: $${orderData.pricing.subtotal.toFixed(2)}\n` +
-      `الإجمالي: $${orderData.pricing.total.toFixed(2)}\n\n` +
-      `*طريقة الدفع:* الدفع عند التسليم\n` +
-      `*ملاحظة:* سيتم التواصل لتحديد عنوان التوصيل`;
-
-    return message;
-  };
-
-  // Send WhatsApp message to business number
-  const sendWhatsAppMessage = (message) => {
-    // Fixed business WhatsApp number
-    const businessNumber = '962782274569'; // Your business number
-
-    const whatsappUrl = `https://wa.me/${businessNumber}?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
-  };
+  // Jordan governorates
+  const jordanGovernorates = [
+    'عمان',
+    'الزرقاء',
+    'إربد',
+    'البلقاء',
+    'الكرك',
+    'المفرق',
+    'مأدبا',
+    'جرش',
+    'عجلون',
+    'العقبة',
+    'معان',
+    'الطفيلة'
+  ];
 
   // Handle order placement
   const handlePlaceOrder = async (e) => {
@@ -56,7 +44,7 @@ const Cart = () => {
 
     try {
       const subtotal = getCartTotal();
-      const total = subtotal; // No shipping fee for simplified checkout
+      const total = subtotal;
 
       const orderData = {
         items: cart.map(item => ({
@@ -66,36 +54,39 @@ const Cart = () => {
           price: item.discountPercent ? item.price * (100 - item.discountPercent) / 100 : item.price,
           image: item.images && item.images[0]
         })),
-        customerInfo,
+        customerInfo: {
+          name: customerInfo.name,
+          phone: customerInfo.phone
+        },
+        shippingAddress: {
+          governorate: shippingAddress.governorate,
+          street: shippingAddress.street,
+          building: shippingAddress.building
+        },
         pricing: {
           subtotal,
           shippingFee: 0,
           tax: 0,
           total
         },
-        orderNumber: generateOrderNumber(),
-        timestamp: new Date().toISOString(),
+        orderNumber: `ORD-${Date.now()}`,
+        createdAt: new Date().toISOString(),
         status: 'pending'
       };
 
-      // Save order to localStorage
-      const existingOrders = JSON.parse(localStorage.getItem('orders') || '[]');
-      existingOrders.push(orderData);
-      localStorage.setItem('orders', JSON.stringify(existingOrders));
-
-      // Generate and send WhatsApp message
-      const whatsappMessage = generateWhatsAppMessage(orderData, orderData.orderNumber);
-      sendWhatsAppMessage(whatsappMessage);
+      // Save order to Firestore
+      await addDoc(collection(db, 'ecommerce_orders'), orderData);
 
       // Clear cart and close form
       clearCart();
       setShowOrderForm(false);
       setCustomerInfo({ name: '', phone: '' });
+      setShippingAddress({ governorate: '', street: '', building: '' });
 
-      alert(`Order placed successfully! Order Number: ${orderData.orderNumber}\nWhatsApp message has been opened.`);
+      alert('تم تقديم الطلب بنجاح!');
 
     } catch (error) {
-      alert('Error placing order: ' + error.message);
+      alert('خطأ في تقديم الطلب: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -182,10 +173,10 @@ const Cart = () => {
               zIndex: 9999
             }}>
               <div className="card" style={{maxWidth: '500px', width: '90%', maxHeight: '80vh', overflow: 'auto'}}>
-                <h2 style={{textAlign: 'center', marginBottom: '20px'}}>Place Your Order</h2>
+                <h2 style={{textAlign: 'center', marginBottom: '20px'}}>تقديم الطلب</h2>
                 <form onSubmit={handlePlaceOrder}>
                   <div className="form-group">
-                    <label>Full Name *</label>
+                    <label>الاسم الكامل *</label>
                     <input
                       type="text"
                       value={customerInfo.name}
@@ -196,17 +187,53 @@ const Cart = () => {
                   </div>
 
                   <div className="form-group">
-                    <label>Phone Number *</label>
+                    <label>رقم الهاتف *</label>
                     <input
                       type="tel"
                       value={customerInfo.phone}
                       onChange={(e) => setCustomerInfo({...customerInfo, phone: e.target.value})}
                       required
-                      placeholder="e.g., +962123456789"
+                      placeholder="مثال: 0791234567"
                     />
                   </div>
 
+                  <h3 style={{marginTop: '20px'}}>عنوان التوصيل</h3>
 
+                  <div className="form-group">
+                    <label>المحافظة *</label>
+                    <select
+                      value={shippingAddress.governorate}
+                      onChange={(e) => setShippingAddress({...shippingAddress, governorate: e.target.value})}
+                      required
+                    >
+                      <option value="">اختر المحافظة</option>
+                      {jordanGovernorates.map(gov => (
+                        <option key={gov} value={gov}>{gov}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label>الشارع *</label>
+                    <input
+                      type="text"
+                      value={shippingAddress.street}
+                      onChange={(e) => setShippingAddress({...shippingAddress, street: e.target.value})}
+                      required
+                      placeholder="اسم الشارع"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>رقم البناية *</label>
+                    <input
+                      type="text"
+                      value={shippingAddress.building}
+                      onChange={(e) => setShippingAddress({...shippingAddress, building: e.target.value})}
+                      required
+                      placeholder="رقم أو اسم البناية"
+                    />
+                  </div>
 
                   <div style={{marginTop: '20px', padding: '15px', background: '#f8f9fa', borderRadius: '8px'}}>
                     <h4>Order Summary:</h4>
@@ -225,10 +252,10 @@ const Cart = () => {
 
                   <div style={{display: 'flex', gap: '10px', marginTop: '20px'}}>
                     <button type="submit" className="btn-success" style={{flex: 1}} disabled={loading}>
-                      {loading ? 'Placing Order...' : 'Confirm Order & Open WhatsApp'}
+                      {loading ? 'جاري تقديم الطلب...' : 'تأكيد الطلب'}
                     </button>
                     <button type="button" onClick={() => setShowOrderForm(false)} className="btn-secondary">
-                      Cancel
+                      إلغاء
                     </button>
                   </div>
                 </form>
