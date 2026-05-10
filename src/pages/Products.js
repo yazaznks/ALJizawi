@@ -43,32 +43,51 @@ const Products = () => {
     <div className="container">
       {activeBanners.length > 0 && (
         <div className="banner-carousel" style={{position: 'relative', marginBottom: '20px'}}>
-          {activeBanners[currentBanner].type === 'video' ? (
-            <div style={{position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', borderRadius: '8px'}}>
-              <iframe
-                src={activeBanners[currentBanner].content}
-                title="Banner Ad"
-                style={{position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none'}}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
-            </div>
-          ) : activeBanners[currentBanner].type === 'image' ? (
-            <div style={{borderRadius: '8px', overflow: 'hidden'}}>
-              <img src={activeBanners[currentBanner].imageData} alt="Banner" style={{width: '100%', maxHeight: '400px', objectFit: 'cover', borderRadius: '8px'}} />
-            </div>
-          ) : (
-            <div className="banner-text" style={{background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', padding: '30px', borderRadius: '8px', textAlign: 'center', fontSize: '24px', fontWeight: 'bold'}}>
-              {activeBanners[currentBanner].content}
-            </div>
-          )}
+          <div className="banner-slide">
+            {(() => {
+              const banner = activeBanners[currentBanner];
+              if (banner.type === 'video') {
+                // If there's an uploaded video file, use the <video> tag
+                if (banner.videoData) {
+                  return (
+                    <video
+                      className="banner-video"
+                      src={banner.videoData}
+                      controls
+                      style={{width: '100%', height: '100%', objectFit: 'contain', background: '#000'}}
+                    />
+                  );
+                }
+                // Otherwise use embed URL
+                return (
+                  <iframe
+                    src={banner.content}
+                    title="Banner Ad"
+                    className="banner-iframe"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                );
+              } else if (banner.type === 'image') {
+                return (
+                  <img src={banner.imageData} alt="Banner" className="banner-image" />
+                );
+              } else {
+                return (
+                  <div className="banner-text">
+                    {banner.content}
+                  </div>
+                );
+              }
+            })()}
+          </div>
           {activeBanners.length > 1 && (
             <>
-              <button onClick={prevBanner} style={{position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', borderRadius: '50%', width: '40px', height: '40px', fontSize: '20px', cursor: 'pointer', zIndex: 2}}>❮</button>
-              <button onClick={nextBanner} style={{position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', borderRadius: '50%', width: '40px', height: '40px', fontSize: '20px', cursor: 'pointer', zIndex: 2}}>❯</button>
-              <div style={{position: 'absolute', bottom: '10px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '8px', zIndex: 2}}>
+              <button onClick={prevBanner} className="banner-nav-btn" style={{left: '10px'}}>❮</button>
+              <button onClick={nextBanner} className="banner-nav-btn" style={{right: '10px'}}>❯</button>
+              <div className="banner-dots">
                 {activeBanners.map((_, i) => (
-                  <button key={i} onClick={() => setCurrentBanner(i)} style={{width: '12px', height: '12px', borderRadius: '50%', border: 'none', background: i === currentBanner ? 'white' : 'rgba(255,255,255,0.5)', cursor: 'pointer'}} />
+                  <button key={i} onClick={() => setCurrentBanner(i)} className={`banner-dot ${i === currentBanner ? 'active' : ''}`} />
                 ))}
               </div>
             </>

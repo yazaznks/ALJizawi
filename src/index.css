@@ -257,6 +257,132 @@ input:focus, textarea:focus, select:focus {
 
 
 
+/* Banner Carousel - Consistent sizing for all types */
+.banner-carousel {
+  position: relative;
+  margin-bottom: 20px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+.banner-slide {
+  width: 100%;
+  height: 350px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #1a1a2e;
+  border-radius: 12px;
+}
+
+.banner-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.banner-video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+}
+
+.banner-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.banner-text {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 30px;
+  text-align: center;
+  font-size: 24px;
+  font-weight: bold;
+  box-sizing: border-box;
+}
+
+.banner-nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0,0,0,0.5);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 20px;
+  cursor: pointer;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s ease;
+}
+
+.banner-nav-btn:hover {
+  background: rgba(0,0,0,0.8);
+}
+
+.banner-dots {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 2;
+}
+
+.banner-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255,255,255,0.5);
+  cursor: pointer;
+  transition: background 0.3s ease;
+  padding: 0;
+}
+
+.banner-dot.active {
+  background: white;
+}
+
+.banner-dot:hover {
+  background: rgba(255,255,255,0.8);
+}
+
+@media (max-width: 768px) {
+  .banner-slide {
+    height: 220px;
+  }
+  .banner-text {
+    font-size: 18px;
+    padding: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .banner-slide {
+    height: 180px;
+  }
+  .banner-text {
+    font-size: 16px;
+    padding: 15px;
+  }
+}
+
 h2 {
   font-size: 28px;
 }

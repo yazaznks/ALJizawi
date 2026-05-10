@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useBanner } from '../context/BannerContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -9,24 +9,35 @@ const AdminAds = () => {
   const [bannerType, setBannerType] = useState('text');
   const [bannerContent, setBannerContent] = useState('');
   const [bannerImageFile, setBannerImageFile] = useState(null);
+  const [bannerVideoFile, setBannerVideoFile] = useState(null);
   const [adding, setAdding] = useState(false);
   const [message, setMessage] = useState('');
+  const videoFileInputRef = useRef(null);
+  const imageFileInputRef = useRef(null);
 
   const handleAddBanner = async (e) => {
     e.preventDefault();
     setAdding(true);
     setMessage('');
-    const result = await addBanner({
+    const bannerData = {
       type: bannerType,
       content: bannerContent,
       active: true,
       imageFile: bannerImageFile
-    });
+    };
+    // If video type and a file is uploaded, pass the video file
+    if (bannerType === 'video') {
+      bannerData.videoFile = bannerVideoFile;
+    }
+    const result = await addBanner(bannerData);
     if (result.success) {
       setMessage('Banner added successfully!');
       setBannerType('text');
       setBannerContent('');
       setBannerImageFile(null);
+      setBannerVideoFile(null);
+      if (videoFileInputRef.current) videoFileInputRef.current.value = '';
+      if (imageFileInputRef.current) imageFileInputRef.current.value = '';
     } else {
       setMessage('Error adding banner: ' + result.message);
     }
@@ -66,23 +77,38 @@ const AdminAds = () => {
           <div className="form-group">
             {bannerType === 'video' ? (
               <>
-                <label>Video Embed URL (e.g., YouTube embed link)</label>
+                <label>Video Embed URL (optional, e.g., YouTube embed link)</label>
                 <input
                   type="text"
                   value={bannerContent}
                   onChange={(e) => setBannerContent(e.target.value)}
                   placeholder="https://www.youtube.com/embed/VIDEO_ID"
                 />
+                <label style={{marginTop: '16px', display: 'block'}}>Or Upload Your Own Video File</label>
+                <input
+                  ref={videoFileInputRef}
+                  type="file"
+                  accept="video/*"
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    setBannerVideoFile(file);
+                  }}
+                />
+                {bannerVideoFile && (
+                  <p style={{marginTop: '8px', fontSize: '14px', color: '#666'}}>Selected: {bannerVideoFile.name}</p>
+                )}
               </>
             ) : bannerType === 'image' ? (
               <>
                 <label>Upload Banner Image</label>
                 <input
+                  ref={imageFileInputRef}
                   type="file"
                   accept="image/*"
                   onChange={(e) => {
                     const file = e.target.files[0];
                     setBannerImageFile(file);
+                    setBannerVideoFile(null);
                   }}
                 />
                 {bannerImageFile && (
@@ -121,7 +147,11 @@ const AdminAds = () => {
                 <div key={banner.id} style={{padding: '15px', border: '1px solid #ddd', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
                   <div style={{flex: 1}}>
                     <strong>{banner.type}</strong>
-                    {banner.type === 'video' && <span style={{marginLeft: '10px', color: '#666'}}>{banner.content}</span>}
+                    {banner.type === 'video' && (
+                      <span style={{marginLeft: '10px', color: '#666'}}>
+                        {banner.videoData ? '[Uploaded Video]' : banner.content}
+                      </span>
+                    )}
                     {banner.type === 'text' && <span style={{marginLeft: '10px', color: '#666'}}>{banner.content}</span>}
                     {banner.type === 'image' && banner.imageData && (
                       <img src={banner.imageData} alt="Banner" style={{maxWidth: '100px', maxHeight: '50px', objectFit: 'cover', borderRadius: '4px', marginLeft: '10px'}} />

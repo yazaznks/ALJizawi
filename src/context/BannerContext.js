@@ -68,6 +68,11 @@ export const BannerProvider = ({ children }) => {
         data.imageData = await fileToBase64(bannerData.imageFile);
       }
 
+      // If video file is provided, convert to base64
+      if (bannerData.videoFile) {
+        data.videoData = await fileToBase64(bannerData.videoFile);
+      }
+
       await addDoc(collection(db, 'banner'), data);
       return { success: true };
     } catch (error) {
