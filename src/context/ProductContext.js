@@ -3,7 +3,7 @@ import {
   collection,
   addDoc,
   updateDoc,
- //deleteDoc,
+  deleteDoc,
   doc,
   //getDocs,
   onSnapshot,
@@ -169,7 +169,7 @@ export const ProductProvider = ({ children }) => {
     }
   };
 
-  // Delete product (soft delete)
+  // Delete product permanently from Firestore
   const deleteProduct = async (id) => {
     try {
       const existingProduct = products.find(p => p._id === id);
@@ -177,10 +177,8 @@ export const ProductProvider = ({ children }) => {
         throw new Error('Product not found');
       }
 
-      const updatedProduct = { ...existingProduct, active: false };
-
-      // Update in Firebase
-      await updateDoc(doc(db, 'ecommerce_products', existingProduct.id), updatedProduct);
+      // Permanently delete from Firestore
+      await deleteDoc(doc(db, 'ecommerce_products', existingProduct.id));
 
       return { success: true };
     } catch (error) {
