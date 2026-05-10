@@ -35,16 +35,17 @@ export const ProductProvider = ({ children }) => {
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const productsData = [];
       querySnapshot.forEach((doc) => {
+        const data = doc.data();
         productsData.push({
-          id: doc.id,
-          ...doc.data(),
+          ...data,
+          id: doc.id, // doc.id MUST come LAST to prevent doc.data().id from overwriting it
           // Ensure proper data types
-          price: parseFloat(doc.data().price) || 0,
-          discountPercent: doc.data().discountPercent ? parseFloat(doc.data().discountPercent) : null,
-          stock: parseInt(doc.data().stock) || 0,
-          weight: parseFloat(doc.data().weight) || 0,
-          featured: doc.data().featured === true,
-          active: doc.data().active !== false // Default to true
+          price: parseFloat(data.price) || 0,
+          discountPercent: data.discountPercent ? parseFloat(data.discountPercent) : null,
+          stock: parseInt(data.stock) || 0,
+          weight: parseFloat(data.weight) || 0,
+          featured: data.featured === true,
+          active: data.active !== false // Default to true
         });
       });
       setProducts(productsData);
@@ -144,8 +145,11 @@ export const ProductProvider = ({ children }) => {
         }
       }
 
+      // Strip out the 'id' field (Firestore doc ID) before writing to the document
+      // to prevent it from contaminating doc.data() on subsequent reads
+      const { id: _ignoreId, ...existingData } = existingProduct;
       const updatedProduct = {
-        ...existingProduct,
+        ...existingData,
         name: productData.name,
         description: productData.description,
         price: parseFloat(productData.price),
