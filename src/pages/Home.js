@@ -51,7 +51,7 @@ const Home = () => {
                 </div>
                 <div className="product-info">
                   <div className="product-name">{product.name}</div>
-                  <div className="product-price">${product.price.toFixed(2)}</div>
+                  <div className="product-price">د.أ ${product.price.toFixed(2)}</div>
                   <div className="product-stock">{t('stock')}: {product.stock}</div>
                 </div>
               </div>

@@ -77,7 +77,7 @@ const AdminDashboard = () => {
               <div className="stat-label">{t('pendingOrders')}</div>
             </div>
             <div className="stat-card">
-              <div className="stat-value">${stats.statistics.totalRevenue.toFixed(2)}</div>
+              <div className="stat-value">د.أ ${stats.statistics.totalRevenue.toFixed(2)}</div>
               <div className="stat-label">{t('totalRevenue')}</div>
             </div>
             <div className="stat-card">
@@ -111,7 +111,7 @@ const AdminDashboard = () => {
                   <tr key={order._id}>
                     <td>{order.orderNumber}</td>
                     <td>{order.customerInfo.name}</td>
-                    <td>${order.pricing.total.toFixed(2)}</td>
+                    <td>د.أ ${order.pricing.total.toFixed(2)}</td>
                     <td><span className={`status-badge status-${order.status}`}>{order.status}</span></td>
                     <td>{new Date(order.createdAt).toLocaleDateString()}</td>
                   </tr>

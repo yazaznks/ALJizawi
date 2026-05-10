@@ -111,11 +111,11 @@ const Products = () => {
                 <div className="product-price">
                   {product.discountPercent ? (
                     <>
-                      <span style={{textDecoration: 'line-through', color: '#999', marginRight: '8px'}}>${product.price.toFixed(2)}</span>
-                      <span style={{color: '#e74c3c', fontWeight: 'bold'}}>${(product.price * (100 - product.discountPercent) / 100).toFixed(2)}</span>
+                      <span style={{textDecoration: 'line-through', color: '#999', marginRight: '8px'}}>د.أ ${product.price.toFixed(2)}</span>
+                      <span style={{color: '#e74c3c', fontWeight: 'bold'}}>د.أ ${(product.price * (100 - product.discountPercent) / 100).toFixed(2)}</span>
                     </>
                   ) : (
-                    `$${product.price.toFixed(2)}`
+                    `د.أ ${product.price.toFixed(2)}`
                   )}
                 </div>
                 <div className="product-stock">{t('stock')}: {product.stock}</div>

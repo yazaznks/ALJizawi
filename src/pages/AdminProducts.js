@@ -151,7 +151,7 @@ const AdminProducts = () => {
 
             <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px'}}>
               <div className="form-group">
-                <label>{t('price')} ($) *</label>
+                <label>{t('price')} (د.أ) *</label>
                 <input
                   type="number"
                   step="0.01"
@@ -282,7 +282,7 @@ const AdminProducts = () => {
               <tr key={product._id}>
                 <td>{product.name}</td>
                 <td>{product.category}</td>
-                <td>${product.price.toFixed(2)}</td>
+                <td>د.أ ${product.price.toFixed(2)}</td>
                 <td>{product.stock}</td>
                 <td>{product.active ? t('active') : t('inactive')}</td>
                 <td>

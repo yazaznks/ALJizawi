@@ -123,11 +123,11 @@ const Cart = () => {
                 <p className="product-price">
                   {item.discountPercent ? (
                     <>
-                      <span style={{textDecoration: 'line-through', color: '#999', marginRight: '6px', fontSize: '14px'}}>${item.price.toFixed(2)}</span>
-                      <span style={{color: '#e74c3c', fontWeight: 'bold'}}>${(item.price * (100 - item.discountPercent) / 100).toFixed(2)}</span>
+                      <span style={{textDecoration: 'line-through', color: '#999', marginRight: '6px', fontSize: '14px'}}>د.أ ${item.price.toFixed(2)}</span>
+                      <span style={{color: '#e74c3c', fontWeight: 'bold'}}>د.أ ${(item.price * (100 - item.discountPercent) / 100).toFixed(2)}</span>
                     </>
                   ) : (
-                    `$${item.price.toFixed(2)}`
+                    `د.أ ${item.price.toFixed(2)}`
                   )}
                 </p>
               </div>
@@ -148,11 +148,11 @@ const Cart = () => {
           <div style={{marginTop: '20px'}}>
             <div style={{display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #ddd'}}>
               <span>{t('subtotal')}:</span>
-              <span>${getCartTotal().toFixed(2)}</span>
+              <span>د.أ ${getCartTotal().toFixed(2)}</span>
             </div>
             <div style={{display: 'flex', justifyContent: 'space-between', padding: '10px 0'}}>
               <span style={{fontSize: '20px', fontWeight: 'bold'}}>{t('total')}:</span>
-              <span style={{fontSize: '20px', fontWeight: 'bold', color: '#28a745'}}>${getCartTotal().toFixed(2)}</span>
+              <span style={{fontSize: '20px', fontWeight: 'bold', color: '#28a745'}}>د.أ ${getCartTotal().toFixed(2)}</span>
             </div>
           </div>
           <button onClick={() => setShowOrderForm(true)} className="btn-success" style={{width: '100%', marginTop: '20px'}}>Place Order</button>
@@ -240,13 +240,13 @@ const Cart = () => {
                     {cart.map(item => (
                       <div key={item._id} style={{display: 'flex', justifyContent: 'space-between', margin: '5px 0'}}>
                         <span>{item.name} x {item.quantity}</span>
-                        <span>${((item.discountPercent ? item.price * (100 - item.discountPercent) / 100 : item.price) * item.quantity).toFixed(2)}</span>
+                        <span>د.أ ${((item.discountPercent ? item.price * (100 - item.discountPercent) / 100 : item.price) * item.quantity).toFixed(2)}</span>
                       </div>
                     ))}
                     <hr style={{margin: '10px 0'}} />
                     <div style={{display: 'flex', justifyContent: 'space-between', fontWeight: 'bold'}}>
                       <span>Total:</span>
-                      <span>${getCartTotal().toFixed(2)}</span>
+                      <span>د.أ ${getCartTotal().toFixed(2)}</span>
                     </div>
                   </div>
 
