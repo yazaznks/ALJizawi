@@ -282,7 +282,7 @@ const AdminProducts = () => {
               <tr key={product._id}>
                 <td>{product.name}</td>
                 <td>{product.category}</td>
-                <td>د.أ ${product.price.toFixed(2)}</td>
+                <td>JOD ${product.price.toFixed(2)}</td>
                 <td>{product.stock}</td>
                 <td>{product.active ? t('active') : t('inactive')}</td>
                 <td>

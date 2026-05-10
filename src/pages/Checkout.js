@@ -175,17 +175,17 @@ const Checkout = () => {
             {cart.map(item => (
               <div key={item._id} style={{padding: '10px 0', borderBottom: '1px solid #ddd'}}>
                 <div>{item.name} x {item.quantity}</div>
-                <div>د.أ ${((item.discountPercent ? item.price * (100 - item.discountPercent) / 100 : item.price) * item.quantity).toFixed(2)}</div>
+                <div>JOD ${((item.discountPercent ? item.price * (100 - item.discountPercent) / 100 : item.price) * item.quantity).toFixed(2)}</div>
               </div>
             ))}
             
             <div className="order-summary-item" style={{marginTop: '20px'}}>
               <span>المجموع:</span>
-              <span>د.أ ${subtotal.toFixed(2)}</span>
+              <span>JOD ${subtotal.toFixed(2)}</span>
             </div>
             <div className="order-summary-item">
               <span className="order-total">الإجمالي:</span>
-              <span className="order-total">د.أ ${total.toFixed(2)}</span>
+              <span className="order-total">JOD ${total.toFixed(2)}</span>
             </div>
           </div>
         </div>
