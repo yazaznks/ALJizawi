@@ -22,11 +22,11 @@ const AdminProducts = () => {
 
   const handleDelete = async (id) => {
     if (window.confirm(t('deleteConfirm'))) {
-      const result = deleteProduct(id);
+      const result = await deleteProduct(id);
       if (result.success) {
         alert(t('productDeleted'));
       } else {
-        alert(t('errorDeleting'));
+        alert(t('errorDeleting') + (result.message ? ': ' + result.message : ''));
       }
     }
   };
