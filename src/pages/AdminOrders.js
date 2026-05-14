@@ -5,7 +5,7 @@ import { collection, onSnapshot, query, orderBy, doc, updateDoc } from 'firebase
 import { db } from '../firebase';
 
 const AdminOrders = () => {
-  const { t } = useLanguage();
+  const { t, formatCurrency } = useLanguage();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -90,7 +90,7 @@ const AdminOrders = () => {
                   <td>{order.customerInfo?.name}</td>
                   <td>{order.customerInfo?.phone}</td>
                   <td>{order.shippingAddress?.governorate}</td>
-                  <td>JOD ${order.pricing?.total?.toFixed(2)}</td>
+                   <td>{formatCurrency(order.pricing?.total)}</td>
                   <td>
                     <span style={{
                       padding: '4px 10px',
@@ -207,8 +207,7 @@ const AdminOrders = () => {
                     <tr key={index}>
                       <td style={{padding: '8px 10px', borderBottom: '1px solid #eee'}}>{item.name}</td>
                       <td style={{padding: '8px 10px', textAlign: 'center', borderBottom: '1px solid #eee'}}>{item.quantity}</td>
-                      <td style={{padding: '8px 10px', textAlign: 'left', borderBottom: '1px solid #eee'}}>JOD ${(item.price * item.quantity).toFixed(2)}</td>
-                    </tr>
+<td style={{padding: '8px 10px', textAlign: 'left', borderBottom: '1px solid #eee'}}>{formatCurrency(item.price * item.quantity)}</td>                    </tr>
                   ))}
                 </tbody>
               </table>
@@ -218,9 +217,9 @@ const AdminOrders = () => {
               <h3 style={{fontSize: '18px', marginBottom: '10px', borderBottom: '2px solid #eee', paddingBottom: '8px'}}>المجموع</h3>
               <table style={{width: '100%', borderCollapse: 'collapse'}}>
                 <tbody>
-                  <tr><td style={{padding: '6px 10px', fontWeight: '600', width: '120px'}}>المجموع الفرعي:</td><td style={{padding: '6px 10px'}}>JOD ${selectedOrder.pricing?.subtotal?.toFixed(2)}</td></tr>
-                  <tr><td style={{padding: '6px 10px', fontWeight: '600'}}>رسوم التوصيل:</td><td style={{padding: '6px 10px'}}>JOD ${selectedOrder.pricing?.shippingFee?.toFixed(2)}</td></tr>
-                  <tr style={{fontWeight: 'bold', fontSize: '18px'}}><td style={{padding: '6px 10px', borderTop: '2px solid #333'}}>الإجمالي:</td><td style={{padding: '6px 10px', borderTop: '2px solid #333', color: '#27ae60'}}>JOD ${selectedOrder.pricing?.total?.toFixed(2)}</td></tr>
+                  <tr><td style={{padding: '6px 10px', fontWeight: '600', width: '120px'}}>المجموع الفرعي:</td><td style={{padding: '6px 10px'}}>{formatCurrency(selectedOrder.pricing?.subtotal)}</td></tr>
+                  <tr><td style={{padding: '6px 10px', fontWeight: '600'}}>رسوم التوصيل:</td><td style={{padding: '6px 10px'}}>{formatCurrency(selectedOrder.pricing?.shippingFee)}</td></tr>
+                  <tr style={{fontWeight: 'bold', fontSize: '18px'}}><td style={{padding: '6px 10px', borderTop: '2px solid #333'}}>الإجمالي:</td><td style={{padding: '6px 10px', borderTop: '2px solid #333', color: '#27ae60'}}>{formatCurrency(selectedOrder.pricing?.total)}</td></tr>
                 </tbody>
               </table>
             </div>

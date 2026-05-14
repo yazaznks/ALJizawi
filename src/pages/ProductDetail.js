@@ -9,7 +9,7 @@ const ProductDetail = () => {
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const { getProduct } = useProducts();
-  const { t } = useLanguage();
+  const { t, formatCurrency } = useLanguage();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
@@ -49,11 +49,11 @@ const ProductDetail = () => {
           <div className="product-price" style={{fontSize: '28px', margin: '15px 0'}}>
             {product.discountPercent ? (
               <>
-                <span style={{textDecoration: 'line-through', color: '#999', fontSize: '20px', marginRight: '10px'}}>JOD ${product.price.toFixed(2)}</span>
-                <span style={{color: '#e74c3c', fontWeight: 'bold'}}>JOD ${(product.price * (100 - product.discountPercent) / 100).toFixed(2)}</span>
+                <span style={{textDecoration: 'line-through', color: '#999', fontSize: '20px', marginRight: '10px'}}>{formatCurrency(product.price)}</span>
+                <span style={{color: '#e74c3c', fontWeight: 'bold'}}>{formatCurrency(product.price * (100 - product.discountPercent) / 100)}</span>
               </>
             ) : (
-              `JOD ${product.price.toFixed(2)}`
+              formatCurrency(product.price)
             )}
           </div>
           <p style={{color: '#666', lineHeight: '1.6'}}>{product.description}</p>

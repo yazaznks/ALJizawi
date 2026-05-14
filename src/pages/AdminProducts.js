@@ -5,7 +5,7 @@ import { useProducts } from '../context/ProductContext';
 import { useLanguage } from '../context/LanguageContext';
 
 const AdminProducts = () => {
- const { t } = useLanguage();
+  const { t, formatCurrency } = useLanguage();
   const { products, loading, createProduct, updateProduct, deleteProduct } = useProducts();
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -282,7 +282,7 @@ const AdminProducts = () => {
               <tr key={product._id}>
                 <td>{product.name}</td>
                 <td>{product.category}</td>
-                <td>JOD ${product.price.toFixed(2)}</td>
+               <td>{formatCurrency(product.price)}</td>
                 <td>{product.stock}</td>
                 <td>{product.active ? t('active') : t('inactive')}</td>
                 <td>

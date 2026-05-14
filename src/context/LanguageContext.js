@@ -358,11 +358,17 @@ export const LanguageProvider = ({ children }) => {
     setLanguage(prev => prev === 'ar' ? 'en' : 'ar');
   };
 
+  const formatCurrency = (amount) => {
+    const formattedAmount = parseFloat(amount).toFixed(2);
+    return language === 'ar' ? `${formattedAmount} د.أ` : `JOD ${formattedAmount}`;
+  };
+
   const value = {
     language,
     setLanguage,
     toggleLanguage,
     t,
+    formatCurrency,
     isRTL: language === 'ar'
   };
 

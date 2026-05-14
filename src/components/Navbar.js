@@ -37,9 +37,9 @@ const Navbar = () => {
 
   return (
     <nav className="navbar ">
-      <div className="container">
+      <div className="container" dir="rtl" >
         <Link to="/products" className="navbar-brand" >
-          <img src={logo} alt="Logo" style={{ height: "250px", marginBottom:"-15px"  }}/>
+          <img src={logo} alt="Logo" style={{ height: "250px", marginBottom:"-15px" , marginRight:"-50px"  }}/>
         </Link>
         <button className={`hamburger ${isMenuOpen ? 'active' : ''}`} onClick={toggleMenu}>
           <span></span>

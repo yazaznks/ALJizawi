@@ -4,7 +4,7 @@ import { useProducts } from '../context/ProductContext';
 import { useLanguage } from '../context/LanguageContext';
 
 const Home = () => {
-  const { t } = useLanguage();
+  const { t, formatCurrency } = useLanguage();
   const { getProducts, loading } = useProducts();
   const [featuredProducts, setFeaturedProducts] = useState([]);
 
@@ -51,7 +51,7 @@ const Home = () => {
                 </div>
                 <div className="product-info">
                   <div className="product-name">{product.name}</div>
-                  <div className="product-price">JOD ${product.price.toFixed(2)}</div>
+                  <div className="product-price">{formatCurrency(product.price)}</div>
                   <div className="product-stock">{t('stock')}: {product.stock}</div>
                 </div>
               </div>

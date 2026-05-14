@@ -8,7 +8,7 @@ import { db } from '../firebase';
 const Checkout = () => {
   const navigate = useNavigate();
   const { cart, getCartTotal, clearCart } = useCart();
-  const { t } = useLanguage();
+ const { t, formatCurrency } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -178,7 +178,7 @@ const Checkout = () => {
                 <div>JOD ${((item.discountPercent ? item.price * (100 - item.discountPercent) / 100 : item.price) * item.quantity).toFixed(2)}</div>
               </div>
             ))}
-            
+
             <div className="order-summary-item" style={{marginTop: '20px'}}>
               <span>المجموع:</span>
               <span>JOD ${subtotal.toFixed(2)}</span>

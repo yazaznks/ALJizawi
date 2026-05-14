@@ -5,7 +5,7 @@ import { useBanner } from '../context/BannerContext';
 import { useLanguage } from '../context/LanguageContext';
 
 const Products = () => {
-  const { t } = useLanguage();
+  const { t, formatCurrency } = useLanguage();
   const { getProducts, loading } = useProducts();
   const { banners } = useBanner();
   const [currentBanner, setCurrentBanner] = useState(0);
@@ -111,11 +111,11 @@ const Products = () => {
                 <div className="product-price">
                   {product.discountPercent ? (
                     <>
-                      <span style={{textDecoration: 'line-through', color: '#999', marginRight: '8px'}}>JOD ${product.price.toFixed(2)}</span>
-                      <span style={{color: '#e74c3c', fontWeight: 'bold'}}>JOD ${(product.price * (100 - product.discountPercent) / 100).toFixed(2)}</span>
+                      <span style={{textDecoration: 'line-through', color: '#999', marginRight: '8px', marginLeft: '8px'}}>{formatCurrency(product.price)}</span>
+                      <span style={{color: '#e74c3c', fontWeight: 'bold'}}>{formatCurrency(product.price * (100 - product.discountPercent) / 100)}</span>
                     </>
                   ) : (
-                    `JOD ${product.price.toFixed(2)}`
+                    formatCurrency(product.price)
                   )}
                 </div>
                 <div className="product-stock">{t('stock')}: {product.stock}</div>

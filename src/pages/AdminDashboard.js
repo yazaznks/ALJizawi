@@ -6,7 +6,7 @@ import { collection, onSnapshot, query, orderBy, limit } from 'firebase/firestor
 import { db } from '../firebase';
 
 const AdminDashboard = () => {
-  const { t } = useLanguage();
+  const { t, formatCurrency } = useLanguage();
   const { products } = useProducts();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -76,8 +76,8 @@ const AdminDashboard = () => {
               <div className="stat-value">{stats.statistics.pendingOrders}</div>
               <div className="stat-label">{t('pendingOrders')}</div>
             </div>
-            <div className="stat-card">
-              <div className="stat-value">JOD ${stats.statistics.totalRevenue.toFixed(2)}</div>
+           <div className="stat-card">
+              <div className="stat-value">{formatCurrency(stats.statistics.totalRevenue)}</div>
               <div className="stat-label">{t('totalRevenue')}</div>
             </div>
             <div className="stat-card">
@@ -111,7 +111,7 @@ const AdminDashboard = () => {
                   <tr key={order._id}>
                     <td>{order.orderNumber}</td>
                     <td>{order.customerInfo.name}</td>
-                    <td>JOD ${order.pricing.total.toFixed(2)}</td>
+                    <td>{formatCurrency(order.pricing.total)}</td>
                     <td><span className={`status-badge status-${order.status}`}>{order.status}</span></td>
                     <td>{new Date(order.createdAt).toLocaleDateString()}</td>
                   </tr>
