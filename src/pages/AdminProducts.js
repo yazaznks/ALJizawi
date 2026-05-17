@@ -17,7 +17,8 @@ const AdminProducts = () => {
     category: '',
     stock: '',
     featured: false,
-    images: []
+    images: [],
+    sizes: []
   });
 
   const handleDelete = async (firestoreId, customId) => {
@@ -41,7 +42,8 @@ const AdminProducts = () => {
       category: product.category,
       stock: product.stock.toString(),
       featured: product.featured,
-      images: []
+      images: [],
+      sizes: product.sizes ? product.sizes.map(s => ({ ...s })) : []
     });
     setShowForm(true);
   };
@@ -73,7 +75,8 @@ const AdminProducts = () => {
           category: '',
           stock: '',
           featured: false,
-          images: []
+          images: [],
+          sizes: []
         });
       } else {
         alert(`Error ${editingProduct ? 'updating' : 'adding'} product: ` + result.message);
@@ -89,20 +92,38 @@ const AdminProducts = () => {
     setFormData({
       name: '',
       description: '',
-          price: '',
-          discountPercent: '',
-          category: '',
-          stock: '',
-          featured: false,
-          images: []
+      price: '',
+      discountPercent: '',
+      category: '',
+      stock: '',
+      featured: false,
+      images: [],
+      sizes: []
     });
   };
 
-  // const handleRemoveImage = (productId, imageIndex) => {
-  //   if (window.confirm('Remove this image?')) {
-  //     removeProductImage(productId, imageIndex);
-  //   }
-  // };
+  // Sizes management
+  const addSize = () => {
+    setFormData(prev => ({
+      ...prev,
+      sizes: [...prev.sizes, { name: '', price: '' }]
+    }));
+  };
+
+  const removeSize = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      sizes: prev.sizes.filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateSize = (index, field, value) => {
+    setFormData(prev => {
+      const newSizes = [...prev.sizes];
+      newSizes[index] = { ...newSizes[index], [field]: value };
+      return { ...prev, sizes: newSizes };
+    });
+  };
 
   if (loading) return <div className="loading">{t('loadingProducts')}</div>;
 
@@ -151,7 +172,7 @@ const AdminProducts = () => {
 
             <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px'}}>
               <div className="form-group">
-                <label>{t('price')} (د.أ) *</label>
+                <label>{t('price')} (د.أ) * {formData.sizes.length > 0 && <span style={{color: '#999', fontSize: '12px'}}>(سيتم تجاهله عند وجود أحجام)</span>}</label>
                 <input
                   type="number"
                   step="0.01"
@@ -194,6 +215,45 @@ const AdminProducts = () => {
                 placeholder="e.g., Electronics, Clothing, Books"
                 required
               />
+            </div>
+
+            {/* Sizes Section */}
+            <div className="form-group" style={{border: '1px solid #e0e0e0', borderRadius: '8px', padding: '16px', marginBottom: '16px', background: '#fafafa'}}>
+              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px'}}>
+                <label style={{fontWeight: '600', fontSize: '15px', margin: 0}}>خيارات الأحجام (اختياري)</label>
+                <button type="button" onClick={addSize} style={{padding: '6px 14px', borderRadius: '6px', border: '1px dashed #3498db', background: 'white', color: '#3498db', cursor: 'pointer', fontSize: '13px', fontWeight: '500'}}>
+                  ➕ إضافة حجم
+                </button>
+              </div>
+              
+              {formData.sizes.length === 0 && (
+                <p style={{color: '#999', fontSize: '13px', margin: 0}}>لا توجد أحجام. سعر المنتج الأساسي سيتم استخدامه.</p>
+              )}
+              
+              {formData.sizes.map((size, index) => (
+                <div key={index} style={{display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '8px'}}>
+                  <input
+                    type="text"
+                    placeholder="اسم الحجم (مثال: كبير)"
+                    value={size.name}
+                    onChange={(e) => updateSize(index, 'name', e.target.value)}
+                    style={{flex: '1', padding: '8px 12px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '14px'}}
+                    required
+                  />
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="السعر (د.أ)"
+                    value={size.price}
+                    onChange={(e) => updateSize(index, 'price', e.target.value)}
+                    style={{flex: '1', padding: '8px 12px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '14px'}}
+                    required
+                  />
+                  <button type="button" onClick={() => removeSize(index)} style={{padding: '6px 12px', borderRadius: '6px', border: '1px solid #e74c3c', background: 'white', color: '#e74c3c', cursor: 'pointer', fontSize: '16px', lineHeight: '1'}}>
+                    ✕
+                  </button>
+                </div>
+              ))}
             </div>
 
             <div className="file-upload">
@@ -282,7 +342,13 @@ const AdminProducts = () => {
               <tr key={product._id}>
                 <td>{product.name}</td>
                 <td>{product.category}</td>
-               <td>{formatCurrency(product.price)}</td>
+                <td>
+                  {product.sizes && product.sizes.length > 0 ? (
+                    <span>{formatCurrency(product.sizes[0].price)}{product.sizes.length > 1 ? ` - ${formatCurrency(product.sizes[product.sizes.length - 1].price)}` : ''}</span>
+                  ) : (
+                    formatCurrency(product.price)
+                  )}
+                </td>
                 <td>{product.stock}</td>
                 <td>{product.active ? t('active') : t('inactive')}</td>
                 <td>

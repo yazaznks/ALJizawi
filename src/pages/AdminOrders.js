@@ -11,6 +11,7 @@ const AdminOrders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [filterGovernorate, setFilterGovernorate] = useState('');
 
   // Load orders from Firestore with real-time updates
   useEffect(() => {
@@ -40,6 +41,14 @@ const AdminOrders = () => {
     }
   };
 
+  // Extract unique governorates from orders
+  const governorates = [...new Set(orders.map(o => o.shippingAddress?.governorate).filter(Boolean))].sort();
+
+  // Filter orders by governorate
+  const filteredOrders = filterGovernorate
+    ? orders.filter(o => o.shippingAddress?.governorate === filterGovernorate)
+    : orders;
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'pending': return '#f39c12';
@@ -65,6 +74,34 @@ const AdminOrders = () => {
       </div>
 
       <div className="card">
+        {/* Governorate Filter */}
+        <div style={{marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap'}}>
+          <label style={{fontWeight: '600'}}>تصفية حسب المحافظة:</label>
+          <select
+            value={filterGovernorate}
+            onChange={(e) => setFilterGovernorate(e.target.value)}
+            style={{padding: '8px 12px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '14px', minWidth: '180px'}}
+          >
+            <option value="">جميع المحافظات ({orders.length})</option>
+            {governorates.map(gov => (
+              <option key={gov} value={gov}>
+                {gov} ({orders.filter(o => o.shippingAddress?.governorate === gov).length})
+              </option>
+            ))}
+          </select>
+          {filterGovernorate && (
+            <button
+              onClick={() => setFilterGovernorate('')}
+              style={{padding: '6px 12px', borderRadius: '6px', border: '1px solid #e74c3c', background: 'white', color: '#e74c3c', cursor: 'pointer', fontSize: '13px', fontWeight: '500'}}
+            >
+              إلغاء التصفية
+            </button>
+          )}
+          <span style={{color: '#666', fontSize: '13px'}}>
+            {filterGovernorate ? `عرض ${filteredOrders.length} من ${orders.length} طلب` : `${orders.length} طلب`}
+          </span>
+        </div>
+
         <table className="table">
           <thead>
             <tr>
@@ -79,14 +116,14 @@ const AdminOrders = () => {
             </tr>
           </thead>
           <tbody>
-            {orders.length === 0 ? (
+            {filteredOrders.length === 0 ? (
               <tr>
                 <td colSpan="8" style={{textAlign: 'center', padding: '20px'}}>
                   No orders found
                 </td>
               </tr>
             ) : (
-              orders.map(order => (
+              filteredOrders.map(order => (
                 <tr key={order.id || order.orderNumber} style={{cursor: 'pointer'}} onClick={() => setSelectedOrder(order)}>
                   <td>{order.orderNumber}</td>
                   <td>{order.customerInfo?.name}</td>
@@ -189,7 +226,7 @@ const AdminOrders = () => {
                 <tbody>
                   <tr><td style={{padding: '6px 10px', fontWeight: '600', width: '120px'}}>المحافظة:</td><td style={{padding: '6px 10px'}}>{selectedOrder.shippingAddress?.governorate}</td></tr>
                   <tr><td style={{padding: '6px 10px', fontWeight: '600'}}>الشارع:</td><td style={{padding: '6px 10px'}}>{selectedOrder.shippingAddress?.street}</td></tr>
-                  <tr><td style={{padding: '6px 10px', fontWeight: '600'}}>رقم البناية:</td><td style={{padding: '6px 10px'}}>{selectedOrder.shippingAddress?.building}</td></tr>
+                  <tr><td style={{padding: '6px 10px', fontWeight: '600'}}> أو معلم /رقم البناية:</td><td style={{padding: '6px 10px'}}>{selectedOrder.shippingAddress?.building}</td></tr>
                 </tbody>
               </table>
             </div>
@@ -218,7 +255,14 @@ const AdminOrders = () => {
                           <div style={{width: '50px', height: '50px', background: '#f0f0f0', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', color: '#999'}}>لا توجد</div>
                         )}
                       </td>
-                      <td style={{padding: '8px 10px', borderBottom: '1px solid #eee'}}>{item.name}</td>
+                      <td style={{padding: '8px 10px', borderBottom: '1px solid #eee'}}>
+                        {item.name}
+                        {item.selectedSize && (
+                          <span style={{display: 'block', fontSize: '12px', color: '#666', marginTop: '2px'}}>
+                            الحجم: {item.selectedSize}
+                          </span>
+                        )}
+                      </td>
                       <td style={{padding: '8px 10px', textAlign: 'center', borderBottom: '1px solid #eee'}}>{item.quantity}</td>
                       <td style={{padding: '8px 10px', textAlign: 'left', borderBottom: '1px solid #eee'}}>{formatCurrency(item.price * item.quantity)}</td>
                     </tr>

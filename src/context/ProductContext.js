@@ -5,11 +5,11 @@ import {
   updateDoc,
   deleteDoc,
   doc,
-  //getDocs,
+  getDocs,
   onSnapshot,
   query,
-  orderBy
- // where
+  orderBy,
+  limit
 } from 'firebase/firestore';
 import { db } from '../firebase';
 
@@ -29,23 +29,55 @@ export const ProductProvider = ({ children }) => {
   const [categories, setCategories] = useState([]);
 
   // Load products from Firebase on mount with real-time updates
+  // Uses limit() so we don't fetch ALL products before showing anything
   useEffect(() => {
-    const q = query(collection(db, 'ecommerce_products'), orderBy('createdAt', 'desc'));
+    // First, do a quick limited fetch to show products ASAP
+    const quickQuery = query(
+      collection(db, 'ecommerce_products'),
+      orderBy('createdAt', 'desc'),
+      limit(50)
+    );
 
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+    // Use getDocs for the initial limited load (faster than waiting for all)
+    getDocs(quickQuery).then((querySnapshot) => {
       const productsData = [];
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
+      querySnapshot.forEach((docSnap) => {
+        const data = docSnap.data();
         productsData.push({
           ...data,
-          id: doc.id, // doc.id MUST come LAST to prevent doc.data().id from overwriting it
-          // Ensure proper data types
+          id: docSnap.id,
           price: parseFloat(data.price) || 0,
           discountPercent: data.discountPercent ? parseFloat(data.discountPercent) : null,
           stock: parseInt(data.stock) || 0,
           weight: parseFloat(data.weight) || 0,
           featured: data.featured === true,
-          active: data.active !== false // Default to true
+          active: data.active !== false
+        });
+      });
+      setProducts(productsData);
+      updateCategories(productsData);
+      setLoading(false);
+    }).catch((error) => {
+      console.error('Error in quick product load:', error);
+      setLoading(false);
+    });
+
+    // Then subscribe to real-time updates for full sync (ongoing)
+    const fullQuery = query(collection(db, 'ecommerce_products'), orderBy('createdAt', 'desc'));
+
+    const unsubscribe = onSnapshot(fullQuery, (querySnapshot) => {
+      const productsData = [];
+      querySnapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        productsData.push({
+          ...data,
+          id: docSnap.id,
+          price: parseFloat(data.price) || 0,
+          discountPercent: data.discountPercent ? parseFloat(data.discountPercent) : null,
+          stock: parseInt(data.stock) || 0,
+          weight: parseFloat(data.weight) || 0,
+          featured: data.featured === true,
+          active: data.active !== false
         });
       });
       setProducts(productsData);
@@ -107,6 +139,7 @@ export const ProductProvider = ({ children }) => {
         featured: productData.featured === 'true' || productData.featured === true,
         weight: productData.weight ? parseFloat(productData.weight) : 0,
         images: images,
+        sizes: productData.sizes || [],
         active: true,
         createdAt: new Date().toISOString()
       };
@@ -158,7 +191,8 @@ export const ProductProvider = ({ children }) => {
         stock: parseInt(productData.stock),
         featured: productData.featured === 'true' || productData.featured === true,
         weight: productData.weight ? parseFloat(productData.weight) : 0,
-        images: [...existingProduct.images, ...newImages] // Append new images
+        images: [...existingProduct.images, ...newImages], // Append new images
+        sizes: productData.sizes || []
       };
 
       // Update in Firebase
@@ -195,7 +229,7 @@ export const ProductProvider = ({ children }) => {
     return products.find(p => p._id === id && p.active);
   };
 
-  // Get all products with filtering
+  // Get all products with filtering (in-memory, for admin/quick use)
   const getProducts = (filters = {}) => {
     let filtered = products.filter(p => p.active);
 
@@ -234,12 +268,12 @@ export const ProductProvider = ({ children }) => {
 
     // Pagination
     const page = filters.page || 1;
-    const limit = filters.limit || 12;
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + limit;
+    const limitCount = filters.limit || 12;
+    const startIndex = (page - 1) * limitCount;
+    const endIndex = startIndex + limitCount;
 
     const paginatedProducts = filtered.slice(startIndex, endIndex);
-    const totalPages = Math.ceil(filtered.length / limit);
+    const totalPages = Math.ceil(filtered.length / limitCount);
 
     return {
       products: paginatedProducts,

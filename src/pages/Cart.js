@@ -49,8 +49,9 @@ const Cart = () => {
         items: cart.map(item => ({
           product: item._id,
           name: item.name,
+          selectedSize: item.selectedSize || null,
           quantity: item.quantity,
-          price: item.discountPercent ? item.price * (100 - item.discountPercent) / 100 : item.price
+          price: item.price
         })),
         customerInfo: {
           name: customerInfo.name,
@@ -107,7 +108,7 @@ const Cart = () => {
       <div style={{display: 'grid', gridTemplateColumns: '1fr', gap: '20px'}} className="cart-grid">
         <div>
           {cart.map(item => (
-            <div key={item._id} className="cart-item">
+            <div key={item.cartKey || item._id} className="cart-item">
               <div className="cart-item-image">
                 {item.images && item.images[0] ? (
                   <img src={item.images[0].url} alt={item.name} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
@@ -117,6 +118,11 @@ const Cart = () => {
               </div>
               <div className="cart-item-info">
                 <h3>{item.name}</h3>
+                {item.selectedSize && (
+                  <p style={{color: '#666', fontSize: '14px', margin: '4px 0'}}>
+                    <span style={{fontWeight: '600'}}>الحجم:</span> {item.selectedSize}
+                  </p>
+                )}
                <p className="product-price">
                   {item.discountPercent ? (
                     <>
@@ -130,11 +136,11 @@ const Cart = () => {
               </div>
               <div className="cart-item-actions">
                 <div className="quantity-control">
-                  <button onClick={() => updateQuantity(item._id, item.quantity - 1)} className="btn-secondary">-</button>
+                  <button onClick={() => updateQuantity(item.cartKey, item.quantity - 1)} className="btn-secondary">-</button>
                   <span>{item.quantity}</span>
-                  <button onClick={() => updateQuantity(item._id, item.quantity + 1)} className="btn-secondary">+</button>
+                  <button onClick={() => updateQuantity(item.cartKey, item.quantity + 1)} className="btn-secondary">+</button>
                 </div>
-                <button onClick={() => removeFromCart(item._id)} className="btn-danger">{t('remove')}</button>
+                <button onClick={() => removeFromCart(item.cartKey)} className="btn-danger">{t('remove')}</button>
               </div>
             </div>
           ))}
@@ -158,7 +164,6 @@ const Cart = () => {
 
           {/* Customer Information Form */}
           <div style={{marginTop: '30px', paddingTop: '20px', borderTop: '2px solid #eee'}}>
-            <h3 style={{marginBottom: '20px', color: '#333'}}>استكمال الطلب: </h3>
             <h3 style={{marginBottom: '20px', color: '#333'}}>معلومات العميل</h3>
             <form onSubmit={handlePlaceOrder}>
               <div className="form-group">
@@ -211,13 +216,13 @@ const Cart = () => {
               </div>
 
               <div className="form-group">
-                <label>رقم البناية أو معلم قريب*</label>
+                <label>رقم البناية *</label>
                 <input
                   type="text"
                   value={shippingAddress.building}
                   onChange={(e) => setShippingAddress({...shippingAddress, building: e.target.value})}
                   required
-                  placeholder="رقم البناية أو معلم قريب"
+                  placeholder="رقم أو اسم البناية"
                 />
               </div>
 

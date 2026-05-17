@@ -20,35 +20,51 @@ export const CartProvider = ({ children }) => {
     localStorage.setItem('cart', JSON.stringify(cart));
   }, [cart]);
 
-  const addToCart = (product, quantity = 1) => {
+  // Generate unique item key based on product ID and selected size (if any)
+  const getItemKey = (product, selectedSize) => {
+    return selectedSize ? `${product._id}_${selectedSize}` : product._id;
+  };
+
+  const addToCart = (product, quantity = 1, selectedSize = null) => {
+    const itemKey = getItemKey(product, selectedSize);
+
     setCart(prevCart => {
-      const existingItem = prevCart.find(item => item._id === product._id);
-      
+      const existingItem = prevCart.find(item => item.cartKey === itemKey);
+
       if (existingItem) {
         return prevCart.map(item =>
-          item._id === product._id
+          item.cartKey === itemKey
             ? { ...item, quantity: item.quantity + quantity }
             : item
         );
       }
-      
-      return [...prevCart, { ...product, quantity }];
+
+      return [...prevCart, {
+        ...product,
+        cartKey: itemKey,
+        selectedSize,
+        quantity,
+        // Store the effective price (from selected size or base price)
+        price: selectedSize
+          ? (product.sizes?.find(s => s.name === selectedSize)?.price || product.price)
+          : product.price
+      }];
     });
   };
 
-  const removeFromCart = (productId) => {
-    setCart(prevCart => prevCart.filter(item => item._id !== productId));
+  const removeFromCart = (cartKey) => {
+    setCart(prevCart => prevCart.filter(item => item.cartKey !== cartKey));
   };
 
-  const updateQuantity = (productId, quantity) => {
+  const updateQuantity = (cartKey, quantity) => {
     if (quantity <= 0) {
-      removeFromCart(productId);
+      removeFromCart(cartKey);
       return;
     }
-    
+
     setCart(prevCart =>
       prevCart.map(item =>
-        item._id === productId ? { ...item, quantity } : item
+        item.cartKey === cartKey ? { ...item, quantity } : item
       )
     );
   };

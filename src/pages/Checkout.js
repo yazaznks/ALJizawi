@@ -49,6 +49,7 @@ const Checkout = () => {
         items: cart.map(item => ({
           product: item._id,
           name: item.name,
+          selectedSize: item.selectedSize || null,
           quantity: item.quantity,
           price: item.discountPercent ? item.price * (100 - item.discountPercent) / 100 : item.price
         })),
