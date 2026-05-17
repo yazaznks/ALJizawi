@@ -50,8 +50,7 @@ const Cart = () => {
           product: item._id,
           name: item.name,
           quantity: item.quantity,
-          price: item.discountPercent ? item.price * (100 - item.discountPercent) / 100 : item.price,
-          image: item.images && item.images[0]
+          price: item.discountPercent ? item.price * (100 - item.discountPercent) / 100 : item.price
         })),
         customerInfo: {
           name: customerInfo.name,
@@ -159,6 +158,7 @@ const Cart = () => {
 
           {/* Customer Information Form */}
           <div style={{marginTop: '30px', paddingTop: '20px', borderTop: '2px solid #eee'}}>
+            <h3 style={{marginBottom: '20px', color: '#333'}}>استكمال الطلب: </h3>
             <h3 style={{marginBottom: '20px', color: '#333'}}>معلومات العميل</h3>
             <form onSubmit={handlePlaceOrder}>
               <div className="form-group">
@@ -211,13 +211,13 @@ const Cart = () => {
               </div>
 
               <div className="form-group">
-                <label>رقم البناية *</label>
+                <label>رقم البناية أو معلم قريب*</label>
                 <input
                   type="text"
                   value={shippingAddress.building}
                   onChange={(e) => setShippingAddress({...shippingAddress, building: e.target.value})}
                   required
-                  placeholder="رقم أو اسم البناية"
+                  placeholder="رقم البناية أو معلم قريب"
                 />
               </div>
 

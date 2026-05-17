@@ -158,7 +158,7 @@ const Checkout = () => {
                 value={shippingAddress.building}
                 onChange={(e) => setShippingAddress({...shippingAddress, building: e.target.value})}
                 required
-                placeholder="رقم أو اسم البناية"
+                placeholder="  رقم البناية او معلم قريب"
               />
             </div>
 
