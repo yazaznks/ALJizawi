@@ -50,8 +50,7 @@ const Checkout = () => {
           product: item._id,
           name: item.name,
           quantity: item.quantity,
-          price: item.discountPercent ? item.price * (100 - item.discountPercent) / 100 : item.price,
-          image: item.images && item.images[0]
+          price: item.discountPercent ? item.price * (100 - item.discountPercent) / 100 : item.price
         })),
         customerInfo: {
           name: customerInfo.name,
@@ -153,7 +152,7 @@ const Checkout = () => {
             </div>
 
             <div className="form-group">
-              <label>رقم البناية *</label>
+              <label>رقم البناية / معلم قريب*</label>
               <input
                 type="text"
                 value={shippingAddress.building}

@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
+import { useProducts } from '../context/ProductContext';
 import { collection, onSnapshot, query, orderBy, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
 const AdminOrders = () => {
   const { t, formatCurrency } = useLanguage();
+  const { products } = useProducts();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -196,19 +198,32 @@ const AdminOrders = () => {
               <h3 style={{fontSize: '18px', marginBottom: '10px', borderBottom: '2px solid #eee', paddingBottom: '8px'}}>المنتجات</h3>
               <table style={{width: '100%', borderCollapse: 'collapse'}}>
                 <thead>
-                  <tr style={{background: '#f8f9fa'}}>
-                    <th style={{padding: '8px 10px', textAlign: 'right', borderBottom: '1px solid #ddd'}}>المنتج</th>
-                    <th style={{padding: '8px 10px', textAlign: 'center', borderBottom: '1px solid #ddd'}}>الكمية</th>
-                    <th style={{padding: '8px 10px', textAlign: 'left', borderBottom: '1px solid #ddd'}}>السعر</th>
-                  </tr>
+                    <tr style={{background: '#f8f9fa'}}>
+                      <th style={{padding: '8px 10px', textAlign: 'right', borderBottom: '1px solid #ddd'}}>الصورة</th>
+                      <th style={{padding: '8px 10px', textAlign: 'right', borderBottom: '1px solid #ddd'}}>المنتج</th>
+                      <th style={{padding: '8px 10px', textAlign: 'center', borderBottom: '1px solid #ddd'}}>الكمية</th>
+                      <th style={{padding: '8px 10px', textAlign: 'left', borderBottom: '1px solid #ddd'}}>السعر</th>
+                    </tr>
                 </thead>
                 <tbody>
-                  {selectedOrder.items?.map((item, index) => (
+                  {selectedOrder.items?.map((item, index) => {
+                    const product = products.find(p => p._id === item.product);
+                    const itemImage = product?.images?.[0]?.url;
+                    return (
                     <tr key={index}>
+                      <td style={{padding: '8px 10px', borderBottom: '1px solid #eee'}}>
+                        {itemImage ? (
+                          <img src={itemImage} alt={item.name} style={{width: '50px', height: '50px', objectFit: 'cover', borderRadius: '6px'}} />
+                        ) : (
+                          <div style={{width: '50px', height: '50px', background: '#f0f0f0', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', color: '#999'}}>لا توجد</div>
+                        )}
+                      </td>
                       <td style={{padding: '8px 10px', borderBottom: '1px solid #eee'}}>{item.name}</td>
                       <td style={{padding: '8px 10px', textAlign: 'center', borderBottom: '1px solid #eee'}}>{item.quantity}</td>
-<td style={{padding: '8px 10px', textAlign: 'left', borderBottom: '1px solid #eee'}}>{formatCurrency(item.price * item.quantity)}</td>                    </tr>
-                  ))}
+                      <td style={{padding: '8px 10px', textAlign: 'left', borderBottom: '1px solid #eee'}}>{formatCurrency(item.price * item.quantity)}</td>
+                    </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
