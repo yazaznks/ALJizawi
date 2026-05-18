@@ -51,7 +51,7 @@ const Cart = () => {
           name: item.name,
           selectedSize: item.selectedSize || null,
           quantity: item.quantity,
-          price: item.price
+          price: item.discountPercent ? item.price * (100 - item.discountPercent) / 100 : item.price
         })),
         customerInfo: {
           name: customerInfo.name,

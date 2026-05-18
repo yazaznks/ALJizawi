@@ -96,6 +96,7 @@ const AdminDashboard = () => {
 
           <h2>{t('recentOrders')}</h2>
           <div className="card">
+            <div className="table-responsive">
             <table className="table">
               <thead>
                 <tr>
@@ -118,6 +119,7 @@ const AdminDashboard = () => {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         </>
       )}

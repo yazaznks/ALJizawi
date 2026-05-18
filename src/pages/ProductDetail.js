@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useProducts } from '../context/ProductContext';
 import { useLanguage } from '../context/LanguageContext';
+import MediaGallery from '../components/MediaGallery';
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -70,14 +71,15 @@ const ProductDetail = () => {
   };
 
   const handleAddToCart = () => {
-    const sizePrice = selectedSize ? parseFloat(selectedSize.price) : product.price;
-    const effectivePrice = applyDiscount(sizePrice);
+    // Set price to the base price (original, not discounted)
+    // The discountPercent is kept so getCartTotal() and order saving will apply it consistently
+    const basePrice = selectedSize ? parseFloat(selectedSize.price) : product.price;
     const item = {
       ...product,
       selectedSize: selectedSize ? selectedSize.name : null,
-      price: effectivePrice,
-      // Remove discountPercent when using sizes since it's already applied
-      discountPercent: 0
+      price: basePrice,
+      // Keep the product's discountPercent so getEffectivePrice() in CartContext applies it
+      discountPercent: product.discountPercent || 0
     };
     addToCart(item, quantity, selectedSize ? selectedSize.name : null);
     alert(t('productAddedToCart'));
@@ -93,19 +95,15 @@ const ProductDetail = () => {
   return (
     <div className="container">
       {loading && <div className="loading" style={{padding: '10px'}}>{t('loadingProduct')}</div>}
-      <div className="card" style={{maxWidth: '600px', margin: '0 auto'}}>
-        <div className="product-image" style={{width: '100%', maxHeight: '500px', borderRadius: '8px 8px 0 0', overflow: 'hidden'}}>
-          {product.images && product.images[0] ? (
-            <img 
-              src={product.images[0].url} 
-              alt={product.name} 
-              loading="lazy"
-              style={{width: '100%', height: '100%', objectFit: 'cover'}} 
-            />
-          ) : (
+      <div className="card" style={{maxWidth: '600px', margin: '0 auto', overflow: 'hidden'}}>
+        {/* Media Gallery with fullscreen viewer */}
+        {product.images && product.images.length > 0 ? (
+          <MediaGallery media={product.images} productName={product.name} />
+        ) : (
+          <div className="product-image" style={{width: '100%', height: '300px', borderRadius: '8px 8px 0 0'}}>
             <span>{t('noImage')}</span>
-          )}
-        </div>
+          </div>
+        )}
         
         <div style={{padding: '20px'}}>
           <h1>{product.name}</h1>
@@ -143,7 +141,7 @@ const ProductDetail = () => {
           {product.sizes && product.sizes.length > 0 && (
             <div style={{margin: '15px 0'}}>
               <label style={{fontWeight: '600', display: 'block', marginBottom: '8px'}}>اختر الحجم:</label>
-              <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap'}}>
+              <div className="size-selector" style={{display: 'flex', gap: '8px', flexWrap: 'wrap'}}>
                 {product.sizes.map((size, index) => {
                   const isSelected = selectedSize && selectedSize.name === size.name;
                   const originalPrice = parseFloat(size.price);

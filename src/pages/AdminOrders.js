@@ -12,6 +12,10 @@ const AdminOrders = () => {
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [filterGovernorate, setFilterGovernorate] = useState('');
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [driverPhone, setDriverPhone] = useState(() => {
+    return localStorage.getItem('driverPhone') || '';
+  });
 
   // Load orders from Firestore with real-time updates
   useEffect(() => {
@@ -61,6 +65,79 @@ const AdminOrders = () => {
     }
   };
 
+  // Selection management
+  const toggleSelection = (orderId, e) => {
+    e.stopPropagation();
+    setSelectedIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(orderId)) {
+        newSet.delete(orderId);
+      } else {
+        newSet.add(orderId);
+      }
+      return newSet;
+    });
+  };
+
+  const selectAll = () => {
+    if (selectedIds.size === filteredOrders.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredOrders.map(o => o.id)));
+    }
+  };
+
+  // Format a single order for WhatsApp message
+  const formatOrderForWhatsApp = (order, index) => {
+    const itemsList = order.items?.map(item =>
+      `  • ${item.name}${item.selectedSize ? ` (${item.selectedSize})` : ''} x${item.quantity} - ${formatCurrency(item.price * item.quantity)}`
+    ).join('\n');
+
+    return (
+      `🛵 *طلب ${index + 1}: #${order.orderNumber}*\n` +
+      `👤 العميل: ${order.customerInfo?.name || 'غير محدد'}\n` +
+      `📞 الهاتف: ${order.customerInfo?.phone || 'غير محدد'}\n` +
+      `📍 العنوان: ${order.shippingAddress?.governorate || ''}, ${order.shippingAddress?.street || ''}, ${order.shippingAddress?.building || ''}\n` +
+      `📦 المنتجات:\n${itemsList || '  لا توجد منتجات'}\n` +
+      `💰 الإجمالي: ${formatCurrency(order.pricing?.total || 0)}\n` +
+      `📅 التاريخ: ${order.createdAt ? new Date(order.createdAt).toLocaleDateString() : '-'}\n`
+    );
+  };
+
+  // Send selected orders to driver via WhatsApp
+  const sendToWhatsApp = () => {
+    if (selectedIds.size === 0) {
+      alert('الرجاء اختيار طلب واحد على الأقل');
+      return;
+    }
+
+    if (!driverPhone) {
+      alert('الرجاء إدخال رقم هاتف السائق');
+      return;
+    }
+
+    // Save driver phone
+    localStorage.setItem('driverPhone', driverPhone);
+
+    const selectedOrders = filteredOrders.filter(o => selectedIds.has(o.id));
+    
+    let message = '🚚 *توصيل الطلبات*\n';
+    message += '━'.repeat(20) + '\n\n';
+
+    selectedOrders.forEach((order, index) => {
+      message += formatOrderForWhatsApp(order, index);
+      message += '━'.repeat(20) + '\n\n';
+    });
+
+    message += '✅ تم إرسال الطلبات بنجاح';
+
+    // Clean the phone number (remove any non-digit characters except +)
+    const cleanPhone = driverPhone.replace(/[^\d+]/g, '');
+    const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+    
+    window.open(whatsappUrl, '_blank');
+  };
+
   if (loading) return <div className="loading">{t('loadingOrders')}</div>;
 
   return (
@@ -75,7 +152,7 @@ const AdminOrders = () => {
 
       <div className="card">
         {/* Governorate Filter */}
-        <div style={{marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap'}}>
+        <div className="governorate-filter" style={{marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap'}}>
           <label style={{fontWeight: '600'}}>تصفية حسب المحافظة:</label>
           <select
             value={filterGovernorate}
@@ -102,9 +179,63 @@ const AdminOrders = () => {
           </span>
         </div>
 
+        {/* WhatsApp Send Section */}
+        <div style={{
+          marginBottom: '15px',
+          padding: '16px',
+          background: '#f0fdf4',
+          borderRadius: '12px',
+          border: '1px solid #bbf7d0',
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '10px',
+          alignItems: 'center'
+        }}>
+          <span style={{fontWeight: '600', fontSize: '15px', color: '#166534'}}>📱 إرسال إلى السائق عبر واتساب</span>
+          <input
+            type="tel"
+            placeholder="رقم السائق (مثال: 96279xxxxxxx)"
+            value={driverPhone}
+            onChange={(e) => setDriverPhone(e.target.value)}
+            style={{
+              flex: '1',
+              minWidth: '200px',
+              padding: '10px 14px',
+              borderRadius: '8px',
+              border: '1px solid #86efac',
+              fontSize: '14px',
+              direction: 'ltr'
+            }}
+          />
+          <button
+            onClick={sendToWhatsApp}
+            className="btn-success"
+            style={{
+              padding: '10px 20px',
+              fontSize: '14px',
+              fontWeight: '600',
+              whiteSpace: 'nowrap',
+              opacity: selectedIds.size === 0 ? 0.6 : 1
+            }}
+            disabled={selectedIds.size === 0}
+          >
+            📨 إرسال ({selectedIds.size}) طلب
+          </button>
+        </div>
+
+        <div className="table-responsive">
         <table className="table">
           <thead>
             <tr>
+              <th>
+                <input
+                  type="checkbox"
+                  checked={filteredOrders.length > 0 && selectedIds.size === filteredOrders.length}
+                  onChange={selectAll}
+                  style={{width: '18px', height: '18px', cursor: 'pointer'}}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </th>
               <th>{t('orderNumber')}</th>
               <th>{t('customer')}</th>
               <th>{t('phone')}</th>
@@ -118,13 +249,30 @@ const AdminOrders = () => {
           <tbody>
             {filteredOrders.length === 0 ? (
               <tr>
-                <td colSpan="8" style={{textAlign: 'center', padding: '20px'}}>
+                <td colSpan="9" style={{textAlign: 'center', padding: '20px'}}>
                   No orders found
                 </td>
               </tr>
             ) : (
-              filteredOrders.map(order => (
-                <tr key={order.id || order.orderNumber} style={{cursor: 'pointer'}} onClick={() => setSelectedOrder(order)}>
+              filteredOrders.map(order => {
+                const isChecked = selectedIds.has(order.id);
+                return (
+                <tr
+                  key={order.id || order.orderNumber}
+                  style={{
+                    cursor: 'pointer',
+                    background: isChecked ? '#f0fdf4' : 'transparent'
+                  }}
+                  onClick={() => setSelectedOrder(order)}
+                >
+                  <td onClick={(e) => toggleSelection(order.id, e)}>
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => {}}
+                      style={{width: '18px', height: '18px', cursor: 'pointer'}}
+                    />
+                  </td>
                   <td>{order.orderNumber}</td>
                   <td>{order.customerInfo?.name}</td>
                   <td>{order.customerInfo?.phone}</td>
@@ -159,10 +307,12 @@ const AdminOrders = () => {
                     </select>
                   </td>
                 </tr>
-              ))
+                );
+              })
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* Order Details Modal */}

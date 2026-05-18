@@ -71,18 +71,37 @@ const Home = () => {
           {featuredProducts.map(product => (
             <Link to={`/products/${product._id}`} key={product._id} style={{textDecoration: 'none', color: 'inherit'}}>
               <div className="product-card">
-                <div className="product-image">
-                  {product.images && product.images[0] ? (
-                    <img 
-                      src={product.images[0].url} 
-                      alt={product.name} 
-                      loading="lazy"
-                      style={{width: '100%', height: '100%', objectFit: 'cover'}} 
-                    />
-                  ) : (
-                    <span>{t('noImage')}</span>
-                  )}
-                </div>
+                  <div className="product-image">
+                    {product.images && product.images[0] ? (
+                      product.images[0].type?.startsWith('video/') ? (
+                        <div style={{width: '100%', height: '100%', position: 'relative', background: '#000'}}>
+                          <video
+                            src={product.images[0].url}
+                            style={{width: '100%', height: '100%', objectFit: 'cover'}}
+                            muted
+                          />
+                          <span style={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            fontSize: '40px',
+                            opacity: 0.8,
+                            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))'
+                          }}>▶️</span>
+                        </div>
+                      ) : (
+                        <img 
+                          src={product.images[0].url} 
+                          alt={product.name} 
+                          loading="lazy"
+                          style={{width: '100%', height: '100%', objectFit: 'cover'}} 
+                        />
+                      )
+                    ) : (
+                      <span>{t('noImage')}</span>
+                    )}
+                  </div>
                 <div className="product-info">
                   <div className="product-name">{product.name}</div>
                   <div className="product-price">

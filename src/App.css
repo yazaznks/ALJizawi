@@ -353,7 +353,6 @@
 
 .table tbody tr:hover {
   background: rgba(99, 102, 241, 0.05);
-  transform: scale(1.01);
 }
 
 .status-badge {
@@ -618,7 +617,7 @@ a:hover {
   }
 
   .navbar-brand img {
-    height: 150px !important;
+    height: 120px !important;
     margin-bottom: -5px !important;
   }
 
@@ -763,11 +762,92 @@ a:hover {
     padding: 12px 20px;
     font-size: 14px;
   }
+
+  /* Admin nav on mobile - wrap links */
+  .admin-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 16px;
+  }
+
+  .admin-nav a {
+    margin-right: 0;
+    margin-left: 0;
+    font-size: 14px;
+    padding: 6px 12px;
+  }
+
+  /* Form grid on mobile - stack columns */
+  .form-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* AdminProducts inline price/stock grid */
+  .admin-products-form-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Responsive table wrapper for horizontal scroll */
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table-responsive .table {
+    min-width: 600px;
+  }
+
+  /* Make product image smaller on mobile */
+  .product-image {
+    height: 180px;
+  }
+
+  /* Order details governorate filter on mobile */
+  .governorate-filter {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .governorate-filter select {
+    width: 100% !important;
+  }
+
+  /* Pagination buttons on mobile */
+  .pagination-wrapper {
+    gap: 4px !important;
+  }
+
+  .pagination-wrapper button {
+    padding: 6px 10px !important;
+    font-size: 13px !important;
+  }
+
+  /* Size buttons on mobile */
+  .size-selector {
+    gap: 6px !important;
+  }
+
+  .size-selector button {
+    padding: 8px 14px !important;
+    font-size: 13px !important;
+    flex: 1;
+    min-width: 80px;
+  }
+
+  /* Checkout summary items */
+  .checkout-summary {
+    padding: 20px;
+  }
+
+  .order-total {
+    font-size: 22px;
+  }
 }
 
 @media (max-width: 480px) {
   .navbar-brand img {
-    height: 150px !important;
+    height: 100px !important;
     margin-bottom: -3px !important;
     align-content: center;
   }
@@ -826,6 +906,17 @@ a:hover {
   .loading {
     padding: 40px 20px;
     font-size: 16px;
+  }
+
+  .admin-nav a {
+    font-size: 13px;
+    padding: 5px 10px;
+  }
+
+  .size-selector button {
+    min-width: 70px;
+    padding: 6px 10px !important;
+    font-size: 12px !important;
   }
 }
 

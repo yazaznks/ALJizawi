@@ -12,6 +12,7 @@ import {
   limit
 } from 'firebase/firestore';
 import { db } from '../firebase';
+import { uploadMultipleFiles } from '../services/r2Upload';
 
 const ProductContext = createContext();
 
@@ -101,7 +102,7 @@ export const ProductProvider = ({ children }) => {
     return Date.now().toString() + Math.random().toString(36).substr(2, 9);
   };
 
-  // Convert file to base64 for storage
+  // Convert file to base64 for storage (fallback)
   const fileToBase64 = (file) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -115,17 +116,11 @@ export const ProductProvider = ({ children }) => {
   const createProduct = async (productData, imageFiles) => {
     setLoading(true);
     try {
-      // Convert images to base64
+      // Upload files to Cloudflare R2 (faster and cheaper than base64 in Firestore)
       const images = [];
       if (imageFiles && imageFiles.length > 0) {
-        for (const file of imageFiles) {
-          const base64 = await fileToBase64(file);
-          images.push({
-            url: base64,
-            filename: file.name,
-            type: file.type
-          });
-        }
+        const uploadedFiles = await uploadMultipleFiles(imageFiles);
+        images.push(...uploadedFiles);
       }
 
       const newProduct = {
@@ -157,7 +152,7 @@ export const ProductProvider = ({ children }) => {
   };
 
   // Update product
-  const updateProduct = async (id, productData, newImageFiles) => {
+  const updateProduct = async (id, productData, newImageFiles, keptImages) => {
     setLoading(true);
     try {
       const existingProduct = products.find(p => p._id === id);
@@ -165,17 +160,11 @@ export const ProductProvider = ({ children }) => {
         throw new Error('Product not found');
       }
 
-      // Convert new images to base64
+      // Upload new images/videos to Cloudflare R2
       const newImages = [];
       if (newImageFiles && newImageFiles.length > 0) {
-        for (const file of newImageFiles) {
-          const base64 = await fileToBase64(file);
-          newImages.push({
-            url: base64,
-            filename: file.name,
-            type: file.type
-          });
-        }
+        const uploadedFiles = await uploadMultipleFiles(newImageFiles);
+        newImages.push(...uploadedFiles);
       }
 
       // Strip out the 'id' field (Firestore doc ID) before writing to the document
@@ -191,7 +180,7 @@ export const ProductProvider = ({ children }) => {
         stock: parseInt(productData.stock),
         featured: productData.featured === 'true' || productData.featured === true,
         weight: productData.weight ? parseFloat(productData.weight) : 0,
-        images: [...existingProduct.images, ...newImages], // Append new images
+        images: [...(keptImages || existingProduct.images), ...newImages], // Keep selected + append new
         sizes: productData.sizes || []
       };
 

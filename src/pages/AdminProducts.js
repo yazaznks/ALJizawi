@@ -9,6 +9,7 @@ const AdminProducts = () => {
   const { products, loading, createProduct, updateProduct, deleteProduct } = useProducts();
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [keptImages, setKeptImages] = useState([]);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -34,6 +35,7 @@ const AdminProducts = () => {
 
   const handleEdit = (product) => {
     setEditingProduct(product);
+    setKeptImages(product.images ? [...product.images] : []);
     setFormData({
       name: product.name,
       description: product.description,
@@ -53,7 +55,7 @@ const AdminProducts = () => {
     try {
       let result;
       if (editingProduct) {
-        result = await updateProduct(editingProduct._id, formData, formData.images);
+        result = await updateProduct(editingProduct._id, formData, formData.images, keptImages);
         if (result.success) {
           alert(t('productUpdated'));
         }
@@ -89,6 +91,7 @@ const AdminProducts = () => {
   const handleCancel = () => {
     setShowForm(false);
     setEditingProduct(null);
+    setKeptImages([]);
     setFormData({
       name: '',
       description: '',
@@ -170,7 +173,7 @@ const AdminProducts = () => {
               />
             </div>
 
-            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px'}}>
+            <div className="admin-products-form-grid" style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px'}}>
               <div className="form-group">
                 <label>{t('price')} (د.أ) * {formData.sizes.length > 0 && <span style={{color: '#999', fontSize: '12px'}}>(سيتم تجاهله عند وجود أحجام)</span>}</label>
                 <input
@@ -258,29 +261,55 @@ const AdminProducts = () => {
 
             <div className="file-upload">
               <label>{t('productImages')}</label>
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={(e) => {
-                  const files = Array.from(e.target.files);
-                  setFormData({...formData, images: files});
-                }}
-              />
+                <input
+                  type="file"
+                  accept="image/*,video/*"
+                  multiple
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files);
+                    setFormData({...formData, images: files});
+                  }}
+                />
+                <p style={{color: '#999', fontSize: '12px', marginTop: '4px'}}>يمكنك رفع صور وفيديوهات</p>
 
-              {/* Show existing images when editing */}
-              {editingProduct && editingProduct.images && editingProduct.images.length > 0 && (
+              {/* Show existing images when editing — with remove buttons */}
+              {editingProduct && keptImages && keptImages.length > 0 && (
                 <div style={{marginTop: '12px'}}>
-                  <p>{t('currentImages')}</p>
+                  <p>الصور الحالية (اضغط ✕ لحذف):</p>
                   <div style={{display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '8px'}}>
-                    {editingProduct.images.map((image, index) => (
-                      <img
-                        key={`existing-${index}`}
-                        src={image.url}
-                        alt={`Current ${index + 1}`}
-                        className="image-preview"
-                        style={{width: '100px', height: '100px', objectFit: 'cover'}}
-                      />
+                    {keptImages.map((image, index) => (
+                      <div key={`existing-${index}`} style={{position: 'relative', width: '100px', height: '100px'}}>
+                        <img
+                          src={image.url}
+                          alt={`Current ${index + 1}`}
+                          className="image-preview"
+                          style={{width: '100%', height: '100%', objectFit: 'cover'}}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setKeptImages(prev => prev.filter((_, i) => i !== index))}
+                          style={{
+                            position: 'absolute',
+                            top: '-6px',
+                            right: '-6px',
+                            background: '#e74c3c',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '50%',
+                            width: '24px',
+                            height: '24px',
+                            fontSize: '14px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                          }}
+                          title="حذف الصورة"
+                        >
+                          ✕
+                        </button>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -326,6 +355,7 @@ const AdminProducts = () => {
       )}
 
       <div className="card">
+        <div className="table-responsive">
         <table className="table">
           <thead>
             <tr>
@@ -359,6 +389,7 @@ const AdminProducts = () => {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

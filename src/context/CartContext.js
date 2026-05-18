@@ -44,10 +44,8 @@ export const CartProvider = ({ children }) => {
         cartKey: itemKey,
         selectedSize,
         quantity,
-        // Store the effective price (from selected size or base price)
-        price: selectedSize
-          ? (product.sizes?.find(s => s.name === selectedSize)?.price || product.price)
-          : product.price
+        // Use the price that was passed in from ProductDetail (already discounted if applicable)
+        price: product.price
       }];
     });
   };
@@ -74,10 +72,20 @@ export const CartProvider = ({ children }) => {
     localStorage.removeItem('cart');
   };
 
+  // Get the effective price for a cart item after applying any discount
+  const getEffectivePrice = (item) => {
+    // If the item has a discountPercent, apply it to the base price
+    if (item.discountPercent) {
+      return item.price * (100 - item.discountPercent) / 100;
+    }
+    // If discountPercent is 0, the price might already be discounted (e.g., sized items)
+    // or there might be no discount at all. Use the price as-is.
+    return item.price;
+  };
+
   const getCartTotal = () => {
     return cart.reduce((total, item) => {
-      const itemPrice = item.discountPercent ? item.price * (100 - item.discountPercent) / 100 : item.price;
-      return total + itemPrice * item.quantity;
+      return total + getEffectivePrice(item) * item.quantity;
     }, 0);
   };
 
