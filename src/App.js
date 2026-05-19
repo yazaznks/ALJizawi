@@ -6,7 +6,6 @@ import { CartProvider } from './context/CartContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { BannerProvider } from './context/BannerContext';
 import Navbar from './components/Navbar';
-import Home from './pages/Home';
 import Products from './pages/Products';
 import ProductDetail from './pages/ProductDetail';
 import Cart from './pages/Cart';

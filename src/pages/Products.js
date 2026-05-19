@@ -45,6 +45,7 @@ const Products = () => {
       setProductsLoading(true);
       loadProducts();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, loading]);
 
   const goToPage = (page) => {
@@ -70,6 +71,7 @@ const Products = () => {
     return pages;
   };
 
+  // eslint-disable-next-line no-unused-vars
   const formatPriceRange = (product) => {
     if (!product.sizes || product.sizes.length === 0) return null;
     const applyDiscount = (price) => product.discountPercent ? price * (100 - product.discountPercent) / 100 : price;

@@ -67,4 +67,5 @@ export const uploadMultipleFiles = async (files) => {
   return Promise.all(uploadPromises);
 };
 
-export default { uploadFile, uploadMultipleFiles };
+const r2Upload = { uploadFile, uploadMultipleFiles };
+export default r2Upload;

@@ -8,7 +8,7 @@ import logo from "../assets/logo.png";
 
 const Navbar = () => {
   const navigate = useNavigate();
-  const { user, logout, isAdmin } = useAuth();
+  const { user, logout } = useAuth();
   const { getCartCount } = useCart();
   const { t, toggleLanguage, language } = useLanguage();
   const [isMenuOpen, setIsMenuOpen] = useState(false);

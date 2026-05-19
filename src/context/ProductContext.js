@@ -102,16 +102,6 @@ export const ProductProvider = ({ children }) => {
     return Date.now().toString() + Math.random().toString(36).substr(2, 9);
   };
 
-  // Convert file to base64 for storage (fallback)
-  const fileToBase64 = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = error => reject(error);
-    });
-  };
-
   // Create product
   const createProduct = async (productData, imageFiles) => {
     setLoading(true);

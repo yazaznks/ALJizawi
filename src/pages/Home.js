@@ -9,6 +9,14 @@ const Home = () => {
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [contentReady, setContentReady] = useState(false);
 
+  const loadFeaturedProducts = () => {
+    const result = getProducts({ featured: true, limit: 8 });
+    setFeaturedProducts(result.products);
+    if (result.products.length > 0) {
+      setContentReady(true);
+    }
+  };
+
   useEffect(() => {
     // Load featured products immediately and keep re-checking when products become available
     loadFeaturedProducts();
@@ -27,6 +35,7 @@ const Home = () => {
       // Clear interval after 10 seconds max
       setTimeout(() => clearInterval(interval), 10000);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -35,15 +44,8 @@ const Home = () => {
       setFeaturedProducts(result.products);
       setContentReady(true);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading]);
-
-  const loadFeaturedProducts = () => {
-    const result = getProducts({ featured: true, limit: 8 });
-    setFeaturedProducts(result.products);
-    if (result.products.length > 0) {
-      setContentReady(true);
-    }
-  };
 
   // Always show the page structure immediately, even while loading
   return (

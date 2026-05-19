@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
 const Cart = () => {
-  const navigate = useNavigate();
   const { cart, removeFromCart, updateQuantity, getCartTotal, clearCart } = useCart();
  const { t, formatCurrency } = useLanguage();
   const [customerInfo, setCustomerInfo] = useState({

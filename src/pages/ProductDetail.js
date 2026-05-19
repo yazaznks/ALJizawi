@@ -18,6 +18,7 @@ const ProductDetail = () => {
 
   useEffect(() => {
     loadProduct();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const loadProduct = () => {
@@ -51,6 +52,7 @@ const ProductDetail = () => {
       }, 8000);
       return () => clearInterval(interval);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product, loading, id]);
 
   // Apply discount to a price if the product has a discountPercent
