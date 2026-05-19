@@ -89,7 +89,7 @@ const Cart = () => {
           tax: 0,
           total
         },
-        orderNumber: `ORD-${Date.now()}`,
+        orderNumber: `#${Date.now().toString().slice(-6)}`,
         createdAt: new Date().toISOString(),
         status: 'pending'
       };
@@ -224,7 +224,7 @@ const Cart = () => {
                   value={customerInfo.phone}
                   onChange={(e) => setCustomerInfo({...customerInfo, phone: e.target.value})}
                   required
-                  placeholder="مثال: 0791234567"
+                  placeholder="مثال: ******0798"
                 />
               </div>
 
@@ -274,13 +274,13 @@ const Cart = () => {
               </div>
 
               <div className="form-group">
-                <label>رقم البناية *</label>
+                <label>رقم البناية / مَعلَم قريب*</label>
                 <input
                   type="text"
                   value={shippingAddress.building}
                   onChange={(e) => setShippingAddress({...shippingAddress, building: e.target.value})}
                   required
-                  placeholder="رقم أو اسم البناية"
+                  placeholder="رقم البناية أو  مَعلَم قريب"
                 />
               </div>
 

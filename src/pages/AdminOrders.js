@@ -13,9 +13,27 @@ const AdminOrders = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [filterGovernorate, setFilterGovernorate] = useState('');
   const [selectedIds, setSelectedIds] = useState(new Set());
+
+
+  // Strip 962 prefix and leading 0 for display (e.g. "96278xxxx" -> "78xxxx")
+  const normalizePhoneDisplay = (phone) => {
+    if (!phone) return '';
+    let cleaned = phone.replace(/[^\d]/g, '');
+    cleaned = cleaned.replace(/^962/, '');
+    return cleaned.startsWith('0') ? cleaned.slice(1) : cleaned;
+  };
   const [driverPhone, setDriverPhone] = useState(() => {
-    return localStorage.getItem('driverPhone') || '';
+    const saved = localStorage.getItem('driverPhone') || '';
+    return normalizePhoneDisplay(saved);
   });
+  // Convert display number to full WhatsApp number (96278xxxxxxx)
+  const toWhatsAppNumber = (displayNumber) => {
+    if (!displayNumber) return '';
+    let cleaned = displayNumber.replace(/[^\d]/g, '');
+    cleaned = cleaned.replace(/^0+/, '');
+    cleaned = cleaned.replace(/^962/, '');
+    return '962' + cleaned;
+  };
 
   // Load orders from Firestore with real-time updates
   useEffect(() => {
@@ -90,17 +108,17 @@ const AdminOrders = () => {
   // Format a single order for WhatsApp message
   const formatOrderForWhatsApp = (order, index) => {
     const itemsList = order.items?.map(item =>
-      `  • ${item.name}${item.selectedSize ? ` (${item.selectedSize})` : ''} x${item.quantity} - ${formatCurrency(item.price * item.quantity)}`
+      `  * ${item.name}${item.selectedSize ? ` (${item.selectedSize})` : ''} x${item.quantity} - ${formatCurrency(item.price * item.quantity)}`
     ).join('\n');
 
     return (
-      `🛵 *طلب ${index + 1}: #${order.orderNumber}*\n` +
-      `👤 العميل: ${order.customerInfo?.name || 'غير محدد'}\n` +
-      `📞 الهاتف: ${order.customerInfo?.phone || 'غير محدد'}\n` +
-      `📍 العنوان: ${order.shippingAddress?.governorate || ''}, ${order.shippingAddress?.street || ''}, ${order.shippingAddress?.building || ''}\n` +
-      `📦 المنتجات:\n${itemsList || '  لا توجد منتجات'}\n` +
-      `💰 الإجمالي: ${formatCurrency(order.pricing?.total || 0)}\n` +
-      `📅 التاريخ: ${order.createdAt ? new Date(order.createdAt).toLocaleDateString() : '-'}\n`
+      `*طلب ${index + 1}: #${order.orderNumber}*\n` +
+      `العميل: ${order.customerInfo?.name || 'غير محدد'}\n` +
+      `الهاتف: ${order.customerInfo?.phone || 'غير محدد'}\n` +
+      `العنوان: ${order.shippingAddress?.governorate || ''}, ${order.shippingAddress?.street || ''}, ${order.shippingAddress?.building || ''}\n` +
+      `المنتجات:\n${itemsList || '  لا توجد منتجات'}\n` +
+      `الإجمالي: ${formatCurrency(order.pricing?.total || 0)}\n` +
+      `التاريخ: ${order.createdAt ? new Date(order.createdAt).toLocaleDateString() : '-'}\n`
     );
   };
 
@@ -116,24 +134,24 @@ const AdminOrders = () => {
       return;
     }
 
-    // Save driver phone
-    localStorage.setItem('driverPhone', driverPhone);
+    // Save driver phone in normalized format
+    const normalizedPhone = toWhatsAppNumber(driverPhone);
+    localStorage.setItem('driverPhone', normalizedPhone);
 
     const selectedOrders = filteredOrders.filter(o => selectedIds.has(o.id));
     
-    let message = '🚚 *توصيل الطلبات*\n';
-    message += '━'.repeat(20) + '\n\n';
+    const separator = '------------------------\n\n';
+    let message = '*توصيل الطلبات*\n';
+    message += separator;
 
     selectedOrders.forEach((order, index) => {
       message += formatOrderForWhatsApp(order, index);
-      message += '━'.repeat(20) + '\n\n';
+      message += separator;
     });
 
-    message += '✅ تم إرسال الطلبات بنجاح';
+    message += 'تم إرسال الطلبات بنجاح';
 
-    // Clean the phone number (remove any non-digit characters except +)
-    const cleanPhone = driverPhone.replace(/[^\d+]/g, '');
-    const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+    const whatsappUrl = `https://wa.me/${normalizedPhone}?text=${encodeURIComponent(message)}`;
     
     window.open(whatsappUrl, '_blank');
   };
@@ -194,7 +212,7 @@ const AdminOrders = () => {
           <span style={{fontWeight: '600', fontSize: '15px', color: '#166534'}}>📱 إرسال إلى السائق عبر واتساب</span>
           <input
             type="tel"
-            placeholder="رقم السائق (مثال: 96279xxxxxxx)"
+            placeholder="رقم السائق (مثال: 78xxxxxxx)"
             value={driverPhone}
             onChange={(e) => setDriverPhone(e.target.value)}
             style={{
