@@ -30,12 +30,7 @@ export const ProductProvider = ({ children }) => {
 
   // Load products from Firebase on mount with real-time updates
   // Uses limit(50) so we don't fetch ALL products before showing anything
-  // Critical: set loading=false immediately so the UI renders right away
   useEffect(() => {
-    // Set loading false immediately to unblock the UI - products will populate
-    // as the onSnapshot stream delivers them
-    setLoading(false);
-
     // Subscribe to real-time updates with a limit of 50 for fast initial load
     const limitedQuery = query(
       collection(db, 'ecommerce_products'),
@@ -60,8 +55,10 @@ export const ProductProvider = ({ children }) => {
       });
       setProducts(productsData);
       updateCategories(productsData);
+      setLoading(false);
     }, (error) => {
       console.error('Error loading products:', error);
+      setLoading(false);
     });
 
     return () => unsubscribe();
