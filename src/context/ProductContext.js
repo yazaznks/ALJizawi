@@ -5,7 +5,6 @@ import {
   updateDoc,
   deleteDoc,
   doc,
-  getDocs,
   onSnapshot,
   query,
   orderBy,
@@ -30,17 +29,21 @@ export const ProductProvider = ({ children }) => {
   const [categories, setCategories] = useState([]);
 
   // Load products from Firebase on mount with real-time updates
-  // Uses limit() so we don't fetch ALL products before showing anything
+  // Uses limit(50) so we don't fetch ALL products before showing anything
+  // Critical: set loading=false immediately so the UI renders right away
   useEffect(() => {
-    // First, do a quick limited fetch to show products ASAP
-    const quickQuery = query(
+    // Set loading false immediately to unblock the UI - products will populate
+    // as the onSnapshot stream delivers them
+    setLoading(false);
+
+    // Subscribe to real-time updates with a limit of 50 for fast initial load
+    const limitedQuery = query(
       collection(db, 'ecommerce_products'),
       orderBy('createdAt', 'desc'),
       limit(50)
     );
 
-    // Use getDocs for the initial limited load (faster than waiting for all)
-    getDocs(quickQuery).then((querySnapshot) => {
+    const unsubscribe = onSnapshot(limitedQuery, (querySnapshot) => {
       const productsData = [];
       querySnapshot.forEach((docSnap) => {
         const data = docSnap.data();
@@ -57,36 +60,8 @@ export const ProductProvider = ({ children }) => {
       });
       setProducts(productsData);
       updateCategories(productsData);
-      setLoading(false);
-    }).catch((error) => {
-      console.error('Error in quick product load:', error);
-      setLoading(false);
-    });
-
-    // Then subscribe to real-time updates for full sync (ongoing)
-    const fullQuery = query(collection(db, 'ecommerce_products'), orderBy('createdAt', 'desc'));
-
-    const unsubscribe = onSnapshot(fullQuery, (querySnapshot) => {
-      const productsData = [];
-      querySnapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        productsData.push({
-          ...data,
-          id: docSnap.id,
-          price: parseFloat(data.price) || 0,
-          discountPercent: data.discountPercent ? parseFloat(data.discountPercent) : null,
-          stock: parseInt(data.stock) || 0,
-          weight: parseFloat(data.weight) || 0,
-          featured: data.featured === true,
-          active: data.active !== false
-        });
-      });
-      setProducts(productsData);
-      updateCategories(productsData);
-      setLoading(false);
     }, (error) => {
       console.error('Error loading products:', error);
-      setLoading(false);
     });
 
     return () => unsubscribe();

@@ -4,6 +4,26 @@ import { useProducts } from '../context/ProductContext';
 import { useBanner } from '../context/BannerContext';
 import { useLanguage } from '../context/LanguageContext';
 
+// Helper: get optimized image URL with Cloudflare image transformation for smaller thumbnails
+const getOptimizedImageUrl = (url, width = 400) => {
+  if (url && url.includes('r2.dev')) {
+    return `${url}?w=${width}&format=auto&fit=cover`;
+  }
+  return url;
+};
+
+// Skeleton card component for instant visual feedback
+const SkeletonCard = () => (
+  <div className="product-card skeleton-card">
+    <div className="product-image skeleton-image shimmer" />
+    <div className="product-info">
+      <div className="skeleton-line skeleton-name shimmer" />
+      <div className="skeleton-line skeleton-price shimmer" />
+      <div className="skeleton-line skeleton-stock shimmer" />
+    </div>
+  </div>
+);
+
 const Products = () => {
   const { t, formatCurrency } = useLanguage();
   const { getProducts, loading } = useProducts();
@@ -160,7 +180,11 @@ const Products = () => {
       <h1>{t('allProducts')}</h1>
       
       {productsLoading ? (
-        <div className="loading" style={{padding: '40px'}}>{t('loadingProducts')}</div>
+        <div className="products-grid">
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(i => (
+            <SkeletonCard key={i} />
+          ))}
+        </div>
       ) : products.length === 0 ? (
         <p style={{textAlign: 'center', padding: '40px'}}>{t('noProducts') || 'لا توجد منتجات'}</p>
       ) : (
@@ -190,7 +214,7 @@ const Products = () => {
                         </div>
                       ) : (
                         <img 
-                          src={product.images[0].url} 
+                          src={getOptimizedImageUrl(product.images[0].url, 400)} 
                           alt={product.name} 
                           loading="lazy"
                           style={{width: '100%', height: '100%', objectFit: 'cover'}} 

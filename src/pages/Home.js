@@ -3,6 +3,28 @@ import { Link } from 'react-router-dom';
 import { useProducts } from '../context/ProductContext';
 import { useLanguage } from '../context/LanguageContext';
 
+// Helper: get optimized image URL with Cloudflare image transformation for smaller thumbnails
+const getOptimizedImageUrl = (url, width = 400) => {
+  // If the URL is from Cloudflare R2, add image transformation params
+  if (url && url.includes('r2.dev')) {
+    // Cloudflare Image Resizing: ?w=400&format=auto&fit=cover
+    return `${url}?w=${width}&format=auto&fit=cover`;
+  }
+  return url;
+};
+
+// Skeleton card component for instant visual feedback
+const SkeletonCard = () => (
+  <div className="product-card skeleton-card">
+    <div className="product-image skeleton-image shimmer" />
+    <div className="product-info">
+      <div className="skeleton-line skeleton-name shimmer" />
+      <div className="skeleton-line skeleton-price shimmer" />
+      <div className="skeleton-line skeleton-stock shimmer" />
+    </div>
+  </div>
+);
+
 const Home = () => {
   const { t, formatCurrency } = useLanguage();
   const { getProducts, loading } = useProducts();
@@ -21,20 +43,20 @@ const Home = () => {
     // Load featured products immediately and keep re-checking when products become available
     loadFeaturedProducts();
     
-    // If products are still loading, poll briefly for early results
-    if (loading) {
-      const interval = setInterval(() => {
-        const result = getProducts({ featured: true, limit: 8 });
-        if (result.products.length > 0) {
-          setFeaturedProducts(result.products);
-          setContentReady(true);
-          clearInterval(interval);
-        }
-      }, 200);
-      
-      // Clear interval after 10 seconds max
-      setTimeout(() => clearInterval(interval), 10000);
-    }
+    // Even though loading=false immediately, products may take time to arrive from Firestore
+    // So we poll briefly for early results
+    const interval = setInterval(() => {
+      const result = getProducts({ featured: true, limit: 8 });
+      if (result.products.length > 0) {
+        setFeaturedProducts(result.products);
+        setContentReady(true);
+        clearInterval(interval);
+      }
+    }, 300);
+    
+    // Clear interval after 15 seconds max (should never take that long)
+    setTimeout(() => clearInterval(interval), 15000);
+    
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -42,7 +64,9 @@ const Home = () => {
     if (!loading) {
       const result = getProducts({ featured: true, limit: 8 });
       setFeaturedProducts(result.products);
-      setContentReady(true);
+      if (result.products.length > 0) {
+        setContentReady(true);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading]);
@@ -64,12 +88,17 @@ const Home = () => {
 
       <h2 style={{marginTop: '40px', marginBottom: '20px'}}>{t('featuredProducts')}</h2>
       
-      {!contentReady && loading ? (
-        <div className="loading" style={{padding: '20px'}}>{t('loading')}</div>
+      {/* Show skeleton cards INSTANTLY while products load - no spinner */}
+      {!contentReady ? (
+        <div className="products-grid">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+            <SkeletonCard key={i} />
+          ))}
+        </div>
       ) : featuredProducts.length === 0 ? (
         <p>{t('noFeaturedProducts')}</p>
       ) : (
-        <div className="products-grid">
+        <div className="products-grid fade-in">
           {featuredProducts.map(product => (
             <Link to={`/products/${product._id}`} key={product._id} style={{textDecoration: 'none', color: 'inherit'}}>
               <div className="product-card">
@@ -81,6 +110,7 @@ const Home = () => {
                             src={product.images[0].url}
                             style={{width: '100%', height: '100%', objectFit: 'cover'}}
                             muted
+                            preload="none"
                           />
                           <span style={{
                             position: 'absolute',
@@ -94,7 +124,7 @@ const Home = () => {
                         </div>
                       ) : (
                         <img 
-                          src={product.images[0].url} 
+                          src={getOptimizedImageUrl(product.images[0].url, 400)} 
                           alt={product.name} 
                           loading="lazy"
                           style={{width: '100%', height: '100%', objectFit: 'cover'}} 
