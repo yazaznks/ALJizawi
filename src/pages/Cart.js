@@ -4,22 +4,12 @@ import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-
-// Delivery fees per governorate (in JOD)
-const DELIVERY_FEES = {
-  'الزرقاء': 0,
-  'عمان': 4,
-  'إربد': 4,
-  'الكرك': 10,
-  'المفرق': 4,
-  'عجلون': 5,
-  'البلقاء': 5,
-  'جرش': 4,
-  'مأدبا': 4,
-  'الطفيلة': 20,
-  'معان': 20,
-  'العقبة': 25,
-};
+import {
+  DELIVERY_OFFERS,
+  GOVERNORATES_ORDERED,
+  calculateDeliveryFee,
+  getBestFreeDeliverySuggestion,
+} from '../services/deliveryConfig';
 
 const Cart = () => {
   const { cart, removeFromCart, updateQuantity, getCartTotal, clearCart } = useCart();
@@ -35,30 +25,20 @@ const Cart = () => {
   });
   const [loading, setLoading] = useState(false);
 
-  // Jordan governorates (ordered by delivery fee)
-  const jordanGovernorates = [
-    'الزرقاء',
-    'عمان',
-    'إربد',
-    'المفرق',
-    'جرش',
-    'مأدبا',
-    'البلقاء',
-    'عجلون',
-    'الكرك',
-    'الطفيلة',
-    'معان',
-    'العقبة',
-  ];
-
-  const getDeliveryFee = (governorate) => {
-    if (!governorate) return null;
-    return DELIVERY_FEES[governorate] ?? null;
-  };
-
-  const deliveryFee = getDeliveryFee(shippingAddress.governorate);
   const subtotal = getCartTotal();
-  const total = subtotal + (deliveryFee ?? 0);
+  const deliveryInfo = calculateDeliveryFee(shippingAddress.governorate, subtotal);
+  const deliveryFee = shippingAddress.governorate ? deliveryInfo.fee : null;
+  const total = shippingAddress.governorate ? subtotal + deliveryInfo.fee : subtotal;
+
+  // Determine the best suggestion for free delivery (when no governorate is selected)
+  const suggestion = !shippingAddress.governorate ? getBestFreeDeliverySuggestion(subtotal) : null;
+  // If a governorate with a freeThreshold is selected but not yet met, show progress
+  const selectedGovConfig = shippingAddress.governorate ? DELIVERY_OFFERS[shippingAddress.governorate] : null;
+  const needsMore = selectedGovConfig && selectedGovConfig.freeThreshold !== null && subtotal < selectedGovConfig.freeThreshold;
+  const remainingForFree = needsMore ? selectedGovConfig.freeThreshold - subtotal : 0;
+  const progressPct = selectedGovConfig && selectedGovConfig.freeThreshold !== null
+    ? Math.min(100, (subtotal / selectedGovConfig.freeThreshold) * 100)
+    : 0;
 
   // Handle order placement
   const handlePlaceOrder = async (e) => {
@@ -85,7 +65,9 @@ const Cart = () => {
         },
         pricing: {
           subtotal,
-          shippingFee: deliveryFee ?? 0,
+          shippingFee: deliveryInfo.fee,
+          isFreeShipping: deliveryInfo.isFree,
+          freeThreshold: deliveryInfo.freeThreshold,
           tax: 0,
           total
         },
@@ -126,6 +108,104 @@ const Cart = () => {
   return (
     <div className="container">
       <h1>{t('shoppingCart')}</h1>
+
+      {/* ========== FREE SHIPPING BANNERS ========== */}
+
+      {/* When a governorate with free threshold is selected but not met: show progress bar */}
+      {shippingAddress.governorate && needsMore && !deliveryInfo.isFree && (
+        <div className="card" style={{
+          background: 'linear-gradient(135deg, #fff8e1, #ffecb3)',
+          border: '1px solid #ffe082',
+          padding: '16px 20px',
+          marginBottom: '16px',
+        }}>
+          <div style={{display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px'}}>
+            <span style={{fontSize: '24px'}}>📦</span>
+            <div>
+              <strong style={{color: '#e65100', fontSize: '15px'}}>
+                أضف {formatCurrency(remainingForFree)} إضافية للحصول على توصيل مجاني!
+              </strong>
+              <p style={{fontSize: '13px', color: '#795548', marginTop: '2px'}}>
+                الطلب من {shippingAddress.governorate} يصبح التوصيل مجاناً عند شراء بقيمة {formatCurrency(selectedGovConfig.freeThreshold)} أو أكثر
+              </p>
+            </div>
+          </div>
+          {/* Progress bar */}
+          <div style={{
+            width: '100%',
+            height: '8px',
+            background: '#e0e0e0',
+            borderRadius: '4px',
+            overflow: 'hidden',
+          }}>
+            <div style={{
+              width: `${progressPct}%`,
+              height: '100%',
+              background: 'linear-gradient(90deg, #ff9800, #f44336)',
+              borderRadius: '4px',
+              transition: 'width 0.4s ease',
+            }} />
+          </div>
+          <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#888', marginTop: '4px'}}>
+            <span>{formatCurrency(subtotal)}</span>
+            <span>{formatCurrency(selectedGovConfig.freeThreshold)}</span>
+          </div>
+        </div>
+      )}
+
+      {/* When the selected governorate qualifies for free delivery: celebration */}
+      {shippingAddress.governorate && deliveryInfo.isFree && (
+        <div className="card" style={{
+          background: 'linear-gradient(135deg, #e8f5e9, #c8e6c9)',
+          border: '1px solid #a5d6a7',
+          padding: '16px 20px',
+          marginBottom: '16px',
+          textAlign: 'center',
+        }}>
+          <span style={{fontSize: '32px', display: 'block', marginBottom: '6px'}}>🎉</span>
+          <strong style={{color: '#2e7d32', fontSize: '17px'}}>
+            توصيل مجاني! طلبك مؤهل للتوصيل المجاني إلى {shippingAddress.governorate}
+          </strong>
+        </div>
+      )}
+
+      {/* When no governorate selected: suggest the best option */}
+      {!shippingAddress.governorate && suggestion && suggestion.remaining > 0 && (
+        <div className="card" style={{
+          background: 'linear-gradient(135deg, #e3f2fd, #bbdefb)',
+          border: '1px solid #90caf9',
+          padding: '16px 20px',
+          marginBottom: '16px',
+        }}>
+          <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
+            <span style={{fontSize: '24px'}}>🚚</span>
+            <div>
+              <strong style={{color: '#1565c0', fontSize: '15px'}}>
+                وفر على التوصيل!
+              </strong>
+              <p style={{fontSize: '13px', color: '#455a64', marginTop: '2px'}}>
+                أضف {formatCurrency(suggestion.remaining)} فقط إلى سلّتك واحصل على توصيل مجاني إلى {suggestion.governorate} (عند الطلب بقيمة {formatCurrency(suggestion.threshold)} أو أكثر)
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* If subtotal already meets one of the lower thresholds: hint without governorate */}
+      {!shippingAddress.governorate && subtotal > 0 && (
+        <div className="card" style={{
+          background: 'linear-gradient(135deg, #fce4ec, #f8bbd0)',
+          border: '1px solid #f48fb1',
+          padding: '14px 20px',
+          marginBottom: '16px',
+        }}>
+          <p style={{fontSize: '14px', color: '#c62828', textAlign: 'center', fontWeight: '600'}}>
+            💡 اختر محافظة من الأسفل لمعرفة رسوم التوصيل وإمكانية الحصول على توصيل مجاني
+          </p>
+        </div>
+      )}
+
+      {/* ========== CART CONTENT ========== */}
       <div style={{display: 'grid', gridTemplateColumns: '1fr', gap: '20px'}} className="cart-grid">
         <div>
           {cart.map(item => (
@@ -183,7 +263,7 @@ const Cart = () => {
               <span>
                 {deliveryFee === null ? (
                   <span style={{color: '#999', fontSize: '14px'}}>اختر المحافظة</span>
-                ) : deliveryFee === 0 ? (
+                ) : deliveryInfo.isFree ? (
                   <span style={{color: '#28a745', fontWeight: '600'}}>مجاناً 🎉</span>
                 ) : (
                   <span style={{color: '#e67e22', fontWeight: '600'}}>{formatCurrency(deliveryFee)}</span>
@@ -195,7 +275,7 @@ const Cart = () => {
             <div style={{display: 'flex', justifyContent: 'space-between', padding: '10px 0'}}>
               <span style={{fontSize: '20px', fontWeight: 'bold'}}>{t('total')}:</span>
               <span style={{fontSize: '20px', fontWeight: 'bold', color: '#28a745'}}>
-                {deliveryFee === null ? formatCurrency(subtotal) : formatCurrency(total)}
+                {formatCurrency(total)}
               </span>
             </div>
 
@@ -238,9 +318,11 @@ const Cart = () => {
                   required
                 >
                   <option value="">اختر المحافظة</option>
-                  {jordanGovernorates.map(gov => {
-                    const fee = DELIVERY_FEES[gov];
-                    const feeLabel = fee === 0 ? ' (توصيل مجاني)' : ` (${fee} د.أ)`;
+                  {GOVERNORATES_ORDERED.map(gov => {
+                    const cfg = DELIVERY_OFFERS[gov];
+                    const feeLabel = cfg.freeThreshold !== null && subtotal >= cfg.freeThreshold
+                      ? ' (توصيل مجاني 🎉)'
+                      : ` (${cfg.baseFee} د.أ)`;
                     return (
                       <option key={gov} value={gov}>{gov}{feeLabel}</option>
                     );
@@ -252,12 +334,14 @@ const Cart = () => {
                   <p style={{
                     marginTop: '6px',
                     fontSize: '13px',
-                    color: deliveryFee === 0 ? '#28a745' : '#e67e22',
+                    color: deliveryInfo.isFree ? '#28a745' : '#e67e22',
                     fontWeight: '600'
                   }}>
-                    {deliveryFee === 0
+                    {deliveryInfo.isFree
                       ? `✅ التوصيل إلى ${shippingAddress.governorate} مجاناً!`
-                      : `🚚 رسوم التوصيل إلى ${shippingAddress.governorate}: ${formatCurrency(deliveryFee)}`}
+                      : remainingForFree > 0
+                        ? `🚚 رسوم التوصيل ${formatCurrency(deliveryFee)} — أضف ${formatCurrency(remainingForFree)} لتحصل على توصيل مجاني`
+                        : `🚚 رسوم التوصيل إلى ${shippingAddress.governorate}: ${formatCurrency(deliveryFee)}`}
                   </p>
                 )}
               </div>
@@ -300,8 +384,8 @@ const Cart = () => {
                   </div>
                   <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '6px'}}>
                     <span>رسوم التوصيل:</span>
-                    <span style={{color: deliveryFee === 0 ? '#28a745' : '#e67e22', fontWeight: '600'}}>
-                      {deliveryFee === 0 ? 'مجاناً' : formatCurrency(deliveryFee)}
+                    <span style={{color: deliveryInfo.isFree ? '#28a745' : '#e67e22', fontWeight: '600'}}>
+                      {deliveryInfo.isFree ? 'مجاناً 🎉' : formatCurrency(deliveryFee)}
                     </span>
                   </div>
                   <div style={{display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '16px', borderTop: '1px solid #dee2e6', paddingTop: '8px', marginTop: '4px'}}>
@@ -316,8 +400,6 @@ const Cart = () => {
               </button>
             </form>
           </div>
-
-         
         </div>
       </div>
     </div>

@@ -228,7 +228,16 @@ const Products = () => {
                     <div className="product-name">{product.name}</div>
                     <div className="product-price">
                       {product.sizes && product.sizes.length > 0 ? (
-                        <span style={{color: '#e74c3c', fontWeight: 'bold'}}>(حسب الحجم)</span>
+                        (() => {
+                          const sortedPrices = product.sizes.map(s => parseFloat(s.price)).sort((a, b) => a - b);
+                          const minPrice = sortedPrices[0];
+                          const discMin = product.discountPercent ? minPrice * (100 - product.discountPercent) / 100 : minPrice;
+                          return (
+                            <span style={{color: '#e74c3c', fontWeight: 'bold'}}>
+                              يبدأ من {formatCurrency(discMin)}
+                            </span>
+                          );
+                        })()
                       ) : product.discountPercent ? (
                         <>
                           <span style={{textDecoration: 'line-through', color: '#999', marginRight: '8px', marginLeft: '8px'}}>{formatCurrency(product.price)}</span>
