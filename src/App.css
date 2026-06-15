@@ -723,7 +723,7 @@ a:hover {
   .product-card {
     margin-bottom: 16px;
     flex-direction: row;
-    height: 150px;
+    height: 220px;
   }
 
   .cart-item {
@@ -825,9 +825,9 @@ a:hover {
 
   /* Make product image side-by-side on mobile */
   .product-image {
-    width: 40%;
+    width: 45%;
     height: 100%;
-    min-width: 100px;
+    min-width: 120px;
     max-width: none;
   }
 
