@@ -127,7 +127,6 @@ const Home = () => {
                           src={getOptimizedImageUrl(product.images[0].url, 400)} 
                           alt={product.name} 
                           loading="lazy"
-                          style={{width: '100%', height: '100%', objectFit: 'cover'}} 
                         />
                       )
                     ) : (
