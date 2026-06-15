@@ -190,9 +190,9 @@
 }
 
 .product-name {
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 700;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   color: #111;
   line-height: 1.35;
   overflow: hidden;
@@ -205,9 +205,9 @@
 
 .product-price {
   color: #111;
-  font-size: 17px;
+  font-size: 21px;
   font-weight: 700;
-  margin: 2px 0;
+  margin: 4px 0;
 }
 
 .product-stock {
@@ -865,15 +865,15 @@ a:hover {
   }
 
   .product-name {
-    font-size: 17px;
+    font-size: 20px;
     -webkit-line-clamp: 1;
     letter-spacing: 0;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
   }
 
   .product-price {
-    font-size: 16px;
-    margin: 2px 0;
+    font-size: 19px;
+    margin: 4px 0;
   }
 
   /* Order details governorate filter on mobile */
