@@ -20,7 +20,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 60px;
+  gap: 0px;
   position: relative;
 
 }
@@ -32,13 +32,19 @@
   font-weight: 700;
   color: #6366f1 !important;
   text-decoration: none;
-  transition: all 0.3s ease;
   text-shadow: 0 2px 4px rgba(99, 102, 241, 0.3);
 }
 
-.navbar-brand:hover {
-  transform: scale(1.05);
-  color: #4f46e5 !important;
+.navbar-brand:hover,
+.navbar-brand:focus,
+.navbar-brand:active {
+  color: #6366f1 !important;
+  transform: none !important;
+}
+
+.navbar-brand img {
+  transition: none !important;
+  transform: none !important;
 }
 
 .navbar-nav {
@@ -584,7 +590,7 @@ a:hover {
 
 [dir="rtl"] .navbar-brand {
 
-  right: 20px;
+  right: 0px;
 }
 
 [dir="rtl"] .navbar-nav a {
@@ -632,11 +638,20 @@ a:hover {
 
   .navbar-brand {
     position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
+    left: 0%;
+    /* transform: translateX(-50%); */
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+
+  .navbar-brand {
+    transition: none !important;
+  }
+
+  .navbar-brand:hover {
+    transform: none !important;
+    color: #6366f1 !important;
   }
 
   .navbar-brand img {
@@ -713,6 +728,19 @@ a:hover {
     display: block;
     padding: 12px 0;
     font-size: 16px;
+    transition: none !important;
+  }
+
+  .navbar-nav a:hover {
+    color: #1f2937 !important;
+  }
+
+  .navbar-nav a::after {
+    display: none !important;
+  }
+
+  .navbar-nav a:hover::after {
+    width: 0 !important;
   }
 
   .products-grid {
