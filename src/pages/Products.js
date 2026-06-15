@@ -225,6 +225,11 @@ const Products = () => {
                   </div>
                   <div className="product-info">
                     <div className="product-name">{product.name}</div>
+                    <div className="product-description">
+                      {product.description && product.description.length > 120
+                        ? product.description.substring(0, 120) + '...'
+                        : product.description}
+                    </div>
                     <div className="product-price">
                       {product.sizes && product.sizes.length > 0 ? (
                         (() => {
