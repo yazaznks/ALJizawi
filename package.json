@@ -38,6 +38,7 @@
   },
   "devDependencies": {
     "gh-pages": "^6.3.0",
+    "typescript": "^4.9.5",
     "wrangler": "^4.88.0"
   }
 }
