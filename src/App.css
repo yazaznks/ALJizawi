@@ -1,5 +1,6 @@
 .App {
   min-height: 100vh;
+  padding-bottom: 90px;
 }
 
 /* Modern Navbar */
@@ -213,6 +214,145 @@
 
 .product-stock {
   display: none;
+}
+
+/* Quick Add Button - Plus sign at bottom of image */
+.quick-add-plus-wrapper {
+  position: absolute;
+  bottom: 12px;
+  left: 10px;
+  right: 10px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.quick-add-plus {
+  width: 44px;
+  height: 44px;
+  border-radius: 100%;
+  background: rgba(255, 255, 255, 0.95);
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #111;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.quick-add-plus:hover {
+  background: white;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  transform: scale(1.1);
+}
+
+.quick-add-plus:active {
+  transform: scale(0.95);
+}
+
+.quick-add-plus.has-count {
+  background: rgba(255, 255, 255, 0.95);
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.quick-add-plus-count {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111;
+}
+
+/* Quick Add Stepper - pill-shaped bar across bottom of image */
+.quick-add-stepper {
+  position: absolute;
+  bottom: 12px;
+  left: 10px;
+  right: 10px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(6px);
+  border-radius: 28px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
+  padding: 5px 6px;
+  animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.quick-add-stepper-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: #f0f0f0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 600;
+  color: #333;
+  transition: all 0.15s ease;
+  padding: 0;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.quick-add-stepper-btn:active {
+  background: #e0e0e0;
+  transform: scale(0.92);
+}
+
+.quick-add-stepper-qty {
+  flex: 1;
+  font-size: 18px;
+  font-weight: 700;
+  color: #111;
+  text-align: center;
+  user-select: none;
+  padding: 6px 0;
+  border-radius: 50%;
+  transition: all 0.15s ease;
+}
+
+/* Quick Add Count Badge */
+.quick-add-count {
+  position: absolute;
+  bottom: 12px;
+  left: 10px;
+  right: 10px;
+  z-index: 10;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(6px);
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  font-weight: 700;
+  color: #111;
+  padding: 0;
+  transition: all 0.2s ease;
+}
+
+.quick-add-count:hover {
+  background: white;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
 /* Cart Styles */
@@ -928,7 +1068,7 @@ a:hover {
   }
 
   .products-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 2fr;
     gap: 12px;
   }
 

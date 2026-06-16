@@ -76,12 +76,8 @@ const Checkout = () => {
       // Save order to Firestore
       await addDoc(collection(db, 'ecommerce_orders'), orderData);
 
-      setSuccess('تم تقديم الطلب بنجاح!');
+      setSuccess('تم تقييم الطلب بنجاح، سيتواصل معك مندوب التوصيل خلال ١-٧ ايام حسب الوصول الى منطقتك');
       clearCart();
-
-      setTimeout(() => {
-        navigate('/');
-      }, 3000);
     } catch (error) {
       setError('خطأ في تقديم الطلب');
     } finally {
@@ -97,7 +93,24 @@ const Checkout = () => {
       <h1>{t('checkout')}</h1>
       
       {error && <div className="error">{error}</div>}
-      {success && <div className="success">{success}</div>}
+
+      {success && (
+        <div className="modal-overlay" onClick={() => { setSuccess(''); navigate('/products'); }}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <div className="modal-body" style={{textAlign: 'center', padding: '40px 30px'}}>
+              <div style={{fontSize: '56px', marginBottom: '16px'}}>✅</div>
+              <h2 style={{margin: '0 0 16px', fontSize: '18px', lineHeight: '1.6', color: '#262626'}}>{success}</h2>
+              <button
+                onClick={() => { setSuccess(''); navigate('/products'); }}
+                className="btn-success"
+                style={{marginTop: '24px', padding: '12px 40px', fontSize: '16px', fontWeight: '600', borderRadius: '8px'}}
+              >
+                موافق
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="checkout-grid" style={{display: 'grid', gridTemplateColumns: '1fr', gap: '20px'}}>
         <div>

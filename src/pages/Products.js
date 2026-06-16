@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useProducts } from '../context/ProductContext';
 import { useBanner } from '../context/BannerContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useCart } from '../context/CartContext';
 
 // Helper: get optimized image URL with Cloudflare image transformation for smaller thumbnails
 const getOptimizedImageUrl = (url, width = 400) => {
@@ -23,6 +24,128 @@ const SkeletonCard = () => (
     </div>
   </div>
 );
+
+// Quick-add button with quantity stepper
+const QuickAddButton = ({ product }) => {
+  const { addToCart, removeFromCart, cart, updateQuantity } = useCart();
+  const [mode, setMode] = useState('plus'); // 'plus' | 'stepper'
+  const timerRef = useRef(null);
+
+  // Get current quantity in cart for this product
+  const cartItem = cart.find(item => item.cartKey === product._id);
+  const cartQuantity = cartItem ? cartItem.quantity : 0;
+
+  // Compute effective price
+  const getPrice = () => {
+    if (product.sizes && product.sizes.length > 0) {
+      const sortedPrices = product.sizes.map(s => parseFloat(s.price)).sort((a, b) => a - b);
+      const minPrice = sortedPrices[0];
+      return product.discountPercent ? minPrice * (100 - product.discountPercent) / 100 : minPrice;
+    }
+    return product.discountPercent ? product.price * (100 - product.discountPercent) / 100 : product.price;
+  };
+
+  // Add 1 to cart immediately
+  const handleAddOne = useCallback(() => {
+    addToCart({ ...product, price: getPrice() }, 1);
+  }, [product, addToCart]);
+
+  // Remove 1 from cart immediately (or fully remove if last)
+  const handleRemoveOne = useCallback(() => {
+    if (cartQuantity <= 1) {
+      removeFromCart(product._id);
+    } else {
+      updateQuantity(product._id, cartQuantity - 1);
+    }
+  }, [product, cartQuantity, removeFromCart, updateQuantity]);
+
+  // Start timers to auto-close stepper
+  const resetTimer = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      setMode('plus');
+    }, 4000);
+  }, []);
+
+  // Clicking the plus button → opens stepper, adds 1 to cart
+  const handlePlusClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    handleAddOne();
+    setMode('stepper');
+    resetTimer();
+  };
+
+  // Stepper - increase: add 1 to cart immediately
+  const handleIncrease = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    handleAddOne();
+    resetTimer();
+  };
+
+  // Stepper - decrease: remove 1 from cart immediately, close if 0
+  const handleDecrease = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (cartQuantity <= 1) {
+      // Last item, remove and close stepper
+      removeFromCart(product._id);
+      if (timerRef.current) clearTimeout(timerRef.current);
+      setMode('plus');
+    } else {
+      handleRemoveOne();
+      resetTimer();
+    }
+  };
+
+  if (mode === 'stepper') {
+    return (
+      <div className="quick-add-stepper">
+        <button
+          className="quick-add-stepper-btn"
+          onClick={handleDecrease}
+        >
+          {cartQuantity <= 1 ? (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="3" y1="12" x2="21" y2="12" />
+            </svg>
+          ) : (
+            '−'
+          )}
+        </button>
+        <span className="quick-add-stepper-qty">
+          {cartQuantity > 0 ? cartQuantity : 1}
+        </span>
+        <button
+          className="quick-add-stepper-btn"
+          onClick={handleIncrease}
+        >
+          +
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="quick-add-plus-wrapper">
+      <button
+        className={`quick-add-plus ${cartQuantity > 0 ? 'has-count' : ''}`}
+        onClick={handlePlusClick}
+        aria-label="Add to cart"
+      >
+        {cartQuantity > 0 ? (
+          <span className="quick-add-plus-count">{cartQuantity}</span>
+        ) : (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+        )}
+      </button>
+    </div>
+  );
+};
 
 const Products = () => {
   const { t, formatCurrency } = useLanguage();
@@ -89,38 +212,6 @@ const Products = () => {
       pages.push(i);
     }
     return pages;
-  };
-
-  // eslint-disable-next-line no-unused-vars
-  const formatPriceRange = (product) => {
-    if (!product.sizes || product.sizes.length === 0) return null;
-    const applyDiscount = (price) => product.discountPercent ? price * (100 - product.discountPercent) / 100 : price;
-    const prices = product.sizes.map(s => applyDiscount(parseFloat(s.price)));
-    const min = Math.min(...prices);
-    const max = Math.max(...prices);
-    if (min === max) {
-      return product.discountPercent
-        ? (
-            <>
-              <span style={{textDecoration: 'line-through', color: '#999', marginRight: '6px', fontSize: '14px'}}>{formatCurrency(parseFloat(product.sizes[0].price))}</span>
-              <span style={{color: '#e74c3c', fontWeight: 'bold'}}>{formatCurrency(min)}</span>
-            </>
-          )
-        : formatCurrency(min);
-    }
-    const originalPrices = product.sizes.map(s => parseFloat(s.price));
-    const origMin = Math.min(...originalPrices);
-    const origMax = Math.max(...originalPrices);
-    const origRange = origMin === origMax ? formatCurrency(origMin) : `${formatCurrency(origMin)} - ${formatCurrency(origMax)}`;
-    const discRange = min === max ? formatCurrency(min) : `${formatCurrency(min)} - ${formatCurrency(max)}`;
-    return product.discountPercent
-      ? (
-          <>
-            <span style={{textDecoration: 'line-through', color: '#999', marginRight: '6px', fontSize: '14px'}}>{origRange}</span>
-            <span style={{color: '#e74c3c', fontWeight: 'bold'}}>{discRange}</span>
-          </>
-        )
-      : discRange;
   };
 
   return (
@@ -222,6 +313,7 @@ const Products = () => {
                     ) : (
                       <span>{t('noImage')}</span>
                     )}
+                    <QuickAddButton product={product} formatCurrency={formatCurrency} t={t} />
                   </div>
                   <div className="product-info">
                     <div className="product-name">{product.name}</div>

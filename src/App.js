@@ -6,6 +6,7 @@ import { CartProvider } from './context/CartContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { BannerProvider } from './context/BannerContext';
 import Navbar from './components/Navbar';
+import CartStickyBar from './components/CartStickyBar';
 import Products from './pages/Products';
 import ProductDetail from './pages/ProductDetail';
 import Cart from './pages/Cart';
@@ -29,6 +30,7 @@ function App() {
             <Router>
             <div className="App">
               <Navbar />
+              <CartStickyBar />
               <Routes>
               <Route path="/" element={<Navigate to="/products" replace />} />
               <Route path="/products" element={<Products />} />

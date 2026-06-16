@@ -12,7 +12,9 @@ const AdminOrders = () => {
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [filterGovernorate, setFilterGovernorate] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
   const [selectedIds, setSelectedIds] = useState(new Set());
+  const [bulkStatus, setBulkStatus] = useState('');
 
 
   // Strip 962 prefix and leading 0 for display (e.g. "96278xxxx" -> "78xxxx")
@@ -56,7 +58,13 @@ const AdminOrders = () => {
 
   const handleStatusChange = async (orderId, newStatus) => {
     try {
-      await updateDoc(doc(db, 'ecommerce_orders', orderId), { status: newStatus });
+      const updateData = { status: newStatus };
+      // When marking as shipped, save the driver phone number
+      if (newStatus === 'shipped') {
+        const normalizedPhone = toWhatsAppNumber(driverPhone);
+        updateData.driverPhone = normalizedPhone;
+      }
+      await updateDoc(doc(db, 'ecommerce_orders', orderId), updateData);
     } catch (error) {
       console.error('Error updating order status:', error);
       alert('Error updating order status');
@@ -66,22 +74,39 @@ const AdminOrders = () => {
   // Extract unique governorates from orders
   const governorates = [...new Set(orders.map(o => o.shippingAddress?.governorate).filter(Boolean))].sort();
 
-  // Filter orders by governorate
-  const filteredOrders = filterGovernorate
-    ? orders.filter(o => o.shippingAddress?.governorate === filterGovernorate)
-    : orders;
+  // Filter orders by governorate and status
+  const filteredOrders = orders.filter(o => {
+    if (filterGovernorate && o.shippingAddress?.governorate !== filterGovernorate) return false;
+    if (filterStatus && o.status !== filterStatus) return false;
+    return true;
+  });
 
   const getStatusColor = (status) => {
     switch (status) {
       case 'pending': return '#f39c12';
-      case 'confirmed': return '#3498db';
-      case 'processing': return '#9b59b6';
-      case 'shipped': return '#2ecc71';
+      case 'shipped': return '#3498db';
       case 'delivered': return '#27ae60';
       case 'cancelled': return '#e74c3c';
       default: return '#95a5a6';
     }
   };
+
+  const getStatusLabel = (status) => {
+    switch (status) {
+      case 'pending': return 'قيد الانتظار';
+      case 'shipped': return 'تم التوصيل للسائق';
+      case 'delivered': return 'تم التوصيل';
+      case 'cancelled': return 'ملغي';
+      default: return status;
+    }
+  };
+
+  const statusOptions = [
+    { value: 'pending', label: 'قيد الانتظار' },
+    { value: 'shipped', label: 'تم التوصيل للسائق' },
+    { value: 'delivered', label: 'تم التوصيل' },
+    { value: 'cancelled', label: 'ملغي' },
+  ];
 
   // Selection management
   const toggleSelection = (orderId, e) => {
@@ -105,6 +130,22 @@ const AdminOrders = () => {
     }
   };
 
+  // Bulk status change - applies immediately when dropdown is selected
+  const handleBulkStatusChangeWithStatus = async (status) => {
+    if (!status || selectedIds.size === 0) return;
+    const selectedOrders = filteredOrders.filter(o => selectedIds.has(o.id));
+    const updates = selectedOrders.map(o => {
+      const updateData = { status };
+      if (status === 'shipped') {
+        updateData.driverPhone = toWhatsAppNumber(driverPhone);
+      }
+      return updateDoc(doc(db, 'ecommerce_orders', o.id), updateData);
+    });
+    await Promise.all(updates);
+    setBulkStatus('');
+    setSelectedIds(new Set());
+  };
+
   // Format a single order for WhatsApp message
   const formatOrderForWhatsApp = (order, index) => {
     const itemsList = order.items?.map(item =>
@@ -123,7 +164,7 @@ const AdminOrders = () => {
   };
 
   // Send selected orders to driver via WhatsApp
-  const sendToWhatsApp = () => {
+  const sendToWhatsApp = async () => {
     if (selectedIds.size === 0) {
       alert('الرجاء اختيار طلب واحد على الأقل');
       return;
@@ -134,12 +175,19 @@ const AdminOrders = () => {
       return;
     }
 
-    // Save driver phone in normalized format
     const normalizedPhone = toWhatsAppNumber(driverPhone);
     localStorage.setItem('driverPhone', normalizedPhone);
 
     const selectedOrders = filteredOrders.filter(o => selectedIds.has(o.id));
-    
+
+    // Auto-update all selected orders to "shipped" and save driver phone
+    const batchUpdates = selectedOrders.filter(o => o.status !== 'shipped').map(o =>
+      updateDoc(doc(db, 'ecommerce_orders', o.id), { status: 'shipped', driverPhone: normalizedPhone })
+    );
+    if (batchUpdates.length > 0) {
+      await Promise.all(batchUpdates);
+    }
+
     const separator = '------------------------\n\n';
     let message = '*توصيل الطلبات*\n';
     message += separator;
@@ -169,31 +217,47 @@ const AdminOrders = () => {
       </div>
 
       <div className="card">
-        {/* Governorate Filter */}
-        <div className="governorate-filter" style={{marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap'}}>
-          <label style={{fontWeight: '600'}}>تصفية حسب المحافظة:</label>
+        {/* Filters Row */}
+        <div style={{marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap'}}>
+          {/* Governorate Filter */}
+          <label style={{fontWeight: '600', fontSize: '14px'}}>المحافظة:</label>
           <select
             value={filterGovernorate}
             onChange={(e) => setFilterGovernorate(e.target.value)}
-            style={{padding: '8px 12px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '14px', minWidth: '180px'}}
+            style={{padding: '8px 12px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '14px', minWidth: '160px'}}
           >
-            <option value="">جميع المحافظات ({orders.length})</option>
+            <option value="">الكل</option>
             {governorates.map(gov => (
               <option key={gov} value={gov}>
                 {gov} ({orders.filter(o => o.shippingAddress?.governorate === gov).length})
               </option>
             ))}
           </select>
-          {filterGovernorate && (
+
+          {/* Status Filter */}
+          <label style={{fontWeight: '600', fontSize: '14px'}}>الحالة:</label>
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            style={{padding: '8px 12px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '14px', minWidth: '160px'}}
+          >
+            <option value="">الكل</option>
+            <option value="pending">🟡 قيد الانتظار ({orders.filter(o => o.status === 'pending').length})</option>
+            <option value="shipped">🟢 تم التوصيل للسائق ({orders.filter(o => o.status === 'shipped').length})</option>
+            <option value="delivered">✅ تم التوصيل ({orders.filter(o => o.status === 'delivered').length})</option>
+            <option value="cancelled">🔴 ملغي ({orders.filter(o => o.status === 'cancelled').length})</option>
+          </select>
+
+          {(filterGovernorate || filterStatus) && (
             <button
-              onClick={() => setFilterGovernorate('')}
+              onClick={() => { setFilterGovernorate(''); setFilterStatus(''); }}
               style={{padding: '6px 12px', borderRadius: '6px', border: '1px solid #e74c3c', background: 'white', color: '#e74c3c', cursor: 'pointer', fontSize: '13px', fontWeight: '500'}}
             >
               إلغاء التصفية
             </button>
           )}
           <span style={{color: '#666', fontSize: '13px'}}>
-            {filterGovernorate ? `عرض ${filteredOrders.length} من ${orders.length} طلب` : `${orders.length} طلب`}
+            {filterGovernorate || filterStatus ? `عرض ${filteredOrders.length} من ${orders.length} طلب` : `${orders.length} طلب`}
           </span>
         </div>
 
@@ -258,6 +322,7 @@ const AdminOrders = () => {
               <th>{t('customer')}</th>
               <th>{t('phone')}</th>
               <th>المحافظة</th>
+              <th>رقم السائق</th>
               <th>{t('total')}</th>
               <th>{t('status')}</th>
               <th>{t('date')}</th>
@@ -267,8 +332,8 @@ const AdminOrders = () => {
           <tbody>
             {filteredOrders.length === 0 ? (
               <tr>
-                <td colSpan="9" style={{textAlign: 'center', padding: '20px'}}>
-                  No orders found
+                <td colSpan="10" style={{textAlign: 'center', padding: '20px'}}>
+                  لا توجد طلبات
                 </td>
               </tr>
             ) : (
@@ -295,7 +360,10 @@ const AdminOrders = () => {
                   <td>{order.customerInfo?.name}</td>
                   <td>{order.customerInfo?.phone}</td>
                   <td>{order.shippingAddress?.governorate}</td>
-                   <td>{formatCurrency(order.pricing?.total)}</td>
+                  <td style={{direction: 'ltr', textAlign: 'left'}}>
+                    {order.driverPhone ? normalizePhoneDisplay(order.driverPhone) : '-'}
+                  </td>
+                  <td>{formatCurrency(order.pricing?.total)}</td>
                   <td>
                     <span style={{
                       padding: '4px 10px',
@@ -303,10 +371,9 @@ const AdminOrders = () => {
                       fontSize: '12px',
                       fontWeight: '600',
                       color: 'white',
-                      background: getStatusColor(order.status),
-                      textTransform: 'uppercase'
+                      background: getStatusColor(order.status)
                     }}>
-                      {order.status}
+                      {getStatusLabel(order.status)}
                     </span>
                   </td>
                   <td>{order.createdAt ? new Date(order.createdAt).toLocaleDateString() : '-'}</td>
@@ -314,14 +381,11 @@ const AdminOrders = () => {
                     <select
                       value={order.status}
                       onChange={(e) => handleStatusChange(order.id, e.target.value)}
-                      style={{padding: '5px', borderRadius: '6px', border: '1px solid #ddd'}}
+                      style={{padding: '5px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '13px'}}
                     >
-                      <option value="pending">Pending</option>
-                      <option value="confirmed">Confirmed</option>
-                      <option value="processing">Processing</option>
-                      <option value="shipped">Shipped</option>
-                      <option value="delivered">Delivered</option>
-                      <option value="cancelled">Cancelled</option>
+                      {statusOptions.map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
                     </select>
                   </td>
                 </tr>
@@ -331,6 +395,37 @@ const AdminOrders = () => {
           </tbody>
         </table>
         </div>
+
+        {/* Bulk Status - Minimal footer */}
+        {selectedIds.size > 0 && (
+          <div style={{
+            marginTop: '12px',
+            padding: '10px 16px',
+            background: '#f8f9fa',
+            borderRadius: '10px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            flexWrap: 'wrap'
+          }}>
+            <span style={{fontSize: '13px', color: '#666'}}>({selectedIds.size} محدد)</span>
+            <select
+              value={bulkStatus}
+              onChange={(e) => {
+                setBulkStatus(e.target.value);
+                if (e.target.value) {
+                  handleBulkStatusChangeWithStatus(e.target.value);
+                }
+              }}
+              style={{padding: '6px 10px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '13px', minWidth: '140px'}}
+            >
+              <option value="">تغيير الحالة...</option>
+              {statusOptions.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {/* Order Details Modal */}
@@ -384,6 +479,9 @@ const AdminOrders = () => {
                 <tbody>
                   <tr><td style={{padding: '6px 10px', fontWeight: '600', width: '120px'}}>الاسم:</td><td style={{padding: '6px 10px'}}>{selectedOrder.customerInfo?.name}</td></tr>
                   <tr><td style={{padding: '6px 10px', fontWeight: '600'}}>رقم الهاتف:</td><td style={{padding: '6px 10px'}}>{selectedOrder.customerInfo?.phone}</td></tr>
+                  {selectedOrder.driverPhone && (
+                    <tr><td style={{padding: '6px 10px', fontWeight: '600'}}>رقم السائق:</td><td style={{padding: '6px 10px', direction: 'ltr', textAlign: 'left'}}>{normalizePhoneDisplay(selectedOrder.driverPhone)}</td></tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -461,12 +559,9 @@ const AdminOrders = () => {
                 }}
                 style={{padding: '8px 12px', borderRadius: '8px', border: '2px solid #ddd', fontSize: '14px', width: '100%'}}
               >
-                <option value="pending">Pending</option>
-                <option value="confirmed">Confirmed</option>
-                <option value="processing">Processing</option>
-                <option value="shipped">Shipped</option>
-                <option value="delivered">Delivered</option>
-                <option value="cancelled">Cancelled</option>
+                {statusOptions.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
               </select>
             </div>
 

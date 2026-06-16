@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
 import { collection, addDoc } from 'firebase/firestore';
@@ -12,6 +12,7 @@ import {
 } from '../services/deliveryConfig';
 
 const Cart = () => {
+  const navigate = useNavigate();
   const { cart, removeFromCart, updateQuantity, getCartTotal, clearCart } = useCart();
   const { t, formatCurrency } = useLanguage();
   const [customerInfo, setCustomerInfo] = useState({
@@ -24,6 +25,7 @@ const Cart = () => {
     building: ''
   });
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState('');
 
   const subtotal = getCartTotal();
   const deliveryInfo = calculateDeliveryFee(shippingAddress.governorate, subtotal);
@@ -84,14 +86,36 @@ const Cart = () => {
       setCustomerInfo({ name: '', phone: '' });
       setShippingAddress({ governorate: '', street: '', building: '' });
 
-      alert('تم تقديم الطلب بنجاح!');
+      setSuccess('تم تقديم الطلب بنجاح، سيتواصل معك مندوب التوصيل خلال ١-٧ ايام حسب الوصول الى منطقتك');
 
     } catch (error) {
-      alert('خطأ في تقديم الطلب: ' + error.message);
+      setSuccess('خطأ في تقديم الطلب: ' + error.message);
     } finally {
       setLoading(false);
     }
   };
+
+  // Show success/error modal BEFORE empty cart check, because clearCart runs on success
+  if (success) {
+    const isError = success.includes('خطأ');
+    return (
+      <div className="container">
+        <div style={{position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000}}>
+          <div style={{background: 'white', borderRadius: '16px', padding: '40px 30px', maxWidth: '420px', width: '90%', textAlign: 'center'}}>
+            <div style={{fontSize: '56px', marginBottom: '16px'}}>{isError ? '❌' : '✅'}</div>
+            <h2 style={{margin: '0 0 16px', fontSize: '17px', lineHeight: '1.6', color: '#262626'}}>{success}</h2>
+            <button
+              onClick={() => { setSuccess(''); if (!isError) navigate('/products'); }}
+              className="btn-success"
+              style={{marginTop: '24px', padding: '12px 40px', fontSize: '16px', fontWeight: '600', borderRadius: '8px', border: 'none', cursor: 'pointer'}}
+            >
+              موافق
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (cart.length === 0) {
     return (

@@ -15,6 +15,7 @@ const ProductDetail = () => {
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [selectedSize, setSelectedSize] = useState(null);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
     loadProduct();
@@ -84,8 +85,12 @@ const ProductDetail = () => {
       discountPercent: product.discountPercent || 0
     };
     addToCart(item, quantity, selectedSize ? selectedSize.name : null);
-    alert(t('productAddedToCart'));
-    navigate('/cart');
+    setShowConfirm(true);
+  };
+
+  const handleContinueShopping = () => {
+    setShowConfirm(false);
+    navigate('/products');
   };
 
   if (loading && !product) return <div className="loading">{t('loadingProduct')}</div>;
@@ -213,6 +218,25 @@ const ProductDetail = () => {
           </button>
         </div>
       </div>
+
+      {/* Custom confirmation modal */}
+      {showConfirm && (
+        <div className="modal-overlay" onClick={() => setShowConfirm(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <div className="modal-body" style={{textAlign: 'center', padding: '30px'}}>
+              <div style={{fontSize: '48px', marginBottom: '16px'}}>✅</div>
+              <h2 style={{margin: '0 0 8px', fontSize: '20px'}}>{t('productAddedToCart')}</h2>
+              <button
+                onClick={handleContinueShopping}
+                className="btn-success"
+                style={{marginTop: '20px', padding: '12px 32px', fontSize: '16px', fontWeight: '600'}}
+              >
+                متابعة التسوق
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
