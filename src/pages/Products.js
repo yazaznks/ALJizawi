@@ -148,14 +148,11 @@ const QuickAddButton = ({ product }) => {
 };
 
 const Products = () => {
-  const { t, formatCurrency } = useLanguage();
-  const { getProducts, loading } = useProducts();
+  const { t, formatCurrency, language } = useLanguage();
+  const { products, loading, hasMore, loadProducts } = useProducts();
   const { banners } = useBanner();
   const [currentBanner, setCurrentBanner] = useState(0);
-  const [products, setProducts] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [productsLoading, setProductsLoading] = useState(true);
+  const loadMoreRef = useRef(null);
 
   const activeBanners = banners.filter(b => b.active);
 
@@ -175,44 +172,28 @@ const Products = () => {
     setCurrentBanner(prev => (prev + 1) % activeBanners.length);
   };
 
-  // Load products - re-run when page or loading state changes
+  // Infinite scroll: load more products when user scrolls to bottom
   useEffect(() => {
-    const loadProducts = () => {
-      const result = getProducts({ page: currentPage, limit: 12 });
-      setProducts(result.products);
-      setTotalPages(result.totalPages);
-      setProductsLoading(false);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading) {
+          loadProducts(true);
+        }
+      },
+      { rootMargin: '200px' }
+    );
+
+    const currentRef = loadMoreRef.current;
+    if (currentRef) {
+      observer.observe(currentRef);
+    }
+
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef);
+      }
     };
-
-    if (!loading) {
-      setProductsLoading(true);
-      loadProducts();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage, loading]);
-
-  const goToPage = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
-
-  const renderPageNumbers = () => {
-    const pages = [];
-    const maxVisible = 5;
-    let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
-    let end = Math.min(totalPages, start + maxVisible - 1);
-
-    if (end - start + 1 < maxVisible) {
-      start = Math.max(1, end - maxVisible + 1);
-    }
-
-    for (let i = start; i <= end; i++) {
-      pages.push(i);
-    }
-    return pages;
-  };
+  }, [hasMore, loading, loadProducts]);
 
   return (
     <div className="container">
@@ -256,8 +237,20 @@ const Products = () => {
           </div>
           {activeBanners.length > 1 && (
             <>
-              <button onClick={prevBanner} className="banner-nav-btn" style={{left: '10px'}}>❮</button>
-              <button onClick={nextBanner} className="banner-nav-btn" style={{right: '10px'}}>❯</button>
+              <button 
+                onClick={language === 'ar' ? nextBanner : prevBanner} 
+                className="banner-nav-btn" 
+                style={{left: '10px'}}
+              >
+                {language === 'ar' ? '❯' : '❮'} 
+              </button>
+              <button 
+                onClick={language === 'ar' ? prevBanner : nextBanner} 
+                className="banner-nav-btn" 
+                style={{right: '10px'}}
+              >
+                {language === 'ar' ? '❮' : '❯'} 
+              </button>
               <div className="banner-dots">
                 {activeBanners.map((_, i) => (
                   <button key={i} onClick={() => setCurrentBanner(i)} className={`banner-dot ${i === currentBanner ? 'active' : ''}`} />
@@ -270,7 +263,7 @@ const Products = () => {
       
       <h1>{t('allProducts')}</h1>
       
-      {productsLoading ? (
+      {loading && products.length === 0 ? (
         <div className="products-grid">
           {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(i => (
             <SkeletonCard key={i} />
@@ -345,71 +338,18 @@ const Products = () => {
             ))}
           </div>
 
-          {totalPages > 1 && (
-            <div className="pagination-wrapper" style={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              gap: '6px',
-              marginTop: '30px',
-              marginBottom: '30px',
-              flexWrap: 'wrap'
-            }}>
-              <button
-                onClick={() => goToPage(currentPage - 1)}
-                disabled={currentPage === 1}
-                style={{
-                  padding: '8px 14px',
-                  borderRadius: '8px',
-                  border: '1px solid #ddd',
-                  background: currentPage === 1 ? '#f5f5f5' : 'white',
-                  color: currentPage === 1 ? '#ccc' : '#333',
-                  cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
-                  fontWeight: '500',
-                  fontSize: '14px'
-                }}
-              >
-                ❮ السابق
-              </button>
-              
-              {renderPageNumbers().map(page => (
-                <button
-                  key={page}
-                  onClick={() => goToPage(page)}
-                  style={{
-                    padding: '8px 14px',
-                    borderRadius: '8px',
-                    border: page === currentPage ? '2px solid #3498db' : '1px solid #ddd',
-                    background: page === currentPage ? '#3498db' : 'white',
-                    color: page === currentPage ? 'white' : '#333',
-                    cursor: 'pointer',
-                    fontWeight: page === currentPage ? '700' : '500',
-                    fontSize: '14px',
-                    minWidth: '38px'
-                  }}
-                >
-                  {page}
-                </button>
-              ))}
-              
-              <button
-                onClick={() => goToPage(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                style={{
-                  padding: '8px 14px',
-                  borderRadius: '8px',
-                  border: '1px solid #ddd',
-                  background: currentPage === totalPages ? '#f5f5f5' : 'white',
-                  color: currentPage === totalPages ? '#ccc' : '#333',
-                  cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
-                  fontWeight: '500',
-                  fontSize: '14px'
-                }}
-              >
-                التالي ❯
-              </button>
-            </div>
-          )}
+          {/* Loading more indicator and infinite scroll sentinel */}
+          <div ref={loadMoreRef} style={{ textAlign: 'center', padding: '20px', minHeight: '60px' }}>
+            {loading && hasMore && (
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: '#666' }}>
+                <span style={{ width: '18px', height: '18px', border: '2px solid #ddd', borderTopColor: '#3498db', borderRadius: '50%', animation: 'spin 1s linear infinite', display: 'inline-block' }}></span>
+                جاري تحميل المزيد...
+              </div>
+            )}
+            {!hasMore && products.length > 0 && (
+              <p style={{ color: '#999', fontSize: '14px' }}>لا يوجد مزيد من المنتجات</p>
+            )}
+          </div>
         </>
       )}
     </div>

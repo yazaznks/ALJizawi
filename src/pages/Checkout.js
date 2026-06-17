@@ -51,7 +51,7 @@ const Checkout = () => {
           name: item.name,
           selectedSize: item.selectedSize || null,
           quantity: item.quantity,
-          price: item.discountPercent ? item.price * (100 - item.discountPercent) / 100 : item.price
+          price: item.price
         })),
         customerInfo: {
           name: customerInfo.name,
@@ -187,18 +187,18 @@ const Checkout = () => {
             <h2>ملخص الطلب</h2>
             {cart.map(item => (
               <div key={item._id} style={{padding: '10px 0', borderBottom: '1px solid #ddd'}}>
-                <div>{item.name} x {item.quantity}</div>
-                <div>JOD ${((item.discountPercent ? item.price * (100 - item.discountPercent) / 100 : item.price) * item.quantity).toFixed(2)}</div>
+            <div>{item.name} x {item.quantity}</div>
+                <div>{formatCurrency(item.price * item.quantity)}</div>
               </div>
             ))}
 
             <div className="order-summary-item" style={{marginTop: '20px'}}>
               <span>المجموع:</span>
-              <span>JOD ${subtotal.toFixed(2)}</span>
+              <span>{formatCurrency(subtotal)}</span>
             </div>
             <div className="order-summary-item">
               <span className="order-total">الإجمالي:</span>
-              <span className="order-total">JOD ${total.toFixed(2)}</span>
+              <span className="order-total">{formatCurrency(total)}</span>
             </div>
           </div>
         </div>

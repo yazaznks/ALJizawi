@@ -135,6 +135,7 @@ const MediaViewer = ({ media, currentIndex, onClose, onPrev, onNext }) => {
           background: 'rgba(0,0,0,0.5)',
           padding: '8px 16px',
           borderRadius: '8px'
+          
         }}
       >
         {currentIndex + 1} / {media.length}
@@ -160,7 +161,8 @@ const MediaViewer = ({ media, currentIndex, onClose, onPrev, onNext }) => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 100001
+            zIndex: 100001,
+            direction: 'ltr'
           }}
         >
           ❮
@@ -214,7 +216,8 @@ const MediaViewer = ({ media, currentIndex, onClose, onPrev, onNext }) => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 100001
+            zIndex: 100001,
+            direction: 'ltr'
           }}
         >
           ❯

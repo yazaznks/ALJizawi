@@ -8,7 +8,9 @@ import {
   onSnapshot,
   query,
   orderBy,
-  limit
+  limit,
+  startAfter,
+  getDocs
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { uploadMultipleFiles } from '../services/r2Upload';
@@ -27,22 +29,44 @@ export const ProductProvider = ({ children }) => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState([]);
+  const [lastVisible, setLastVisible] = useState(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [totalLoaded, setTotalLoaded] = useState(0);
+  const PAGE_SIZE = 12;
 
-  // Load products from Firebase on mount with real-time updates
-  // Uses limit(50) so we don't fetch ALL products before showing anything
-  useEffect(() => {
-    // Subscribe to real-time updates with a limit of 50 for fast initial load
-    const limitedQuery = query(
-      collection(db, 'ecommerce_products'),
-      orderBy('createdAt', 'desc'),
-      limit(50)
-    );
+  // Load initial products from Firebase
+  const loadProducts = async (loadMore = false) => {
+    if (loadMore && !hasMore) return;
 
-    const unsubscribe = onSnapshot(limitedQuery, (querySnapshot) => {
-      const productsData = [];
-      querySnapshot.forEach((docSnap) => {
+    setLoading(true);
+    try {
+      let q = query(
+        collection(db, 'ecommerce_products'),
+        orderBy('createdAt', 'desc'),
+        limit(PAGE_SIZE)
+      );
+
+      if (loadMore && lastVisible) {
+        q = query(
+          collection(db, 'ecommerce_products'),
+          orderBy('createdAt', 'desc'),
+          startAfter(lastVisible),
+          limit(PAGE_SIZE)
+        );
+      }
+
+      const snapshot = await getDocs(q);
+      const docs = snapshot.docs;
+
+      if (docs.length === 0) {
+        setHasMore(false);
+        setLoading(false);
+        return;
+      }
+
+      const productsData = docs.map(docSnap => {
         const data = docSnap.data();
-        productsData.push({
+        return {
           ...data,
           id: docSnap.id,
           price: parseFloat(data.price) || 0,
@@ -51,17 +75,29 @@ export const ProductProvider = ({ children }) => {
           weight: parseFloat(data.weight) || 0,
           featured: data.featured === true,
           active: data.active !== false
-        });
+        };
       });
-      setProducts(productsData);
-      updateCategories(productsData);
-      setLoading(false);
-    }, (error) => {
-      console.error('Error loading products:', error);
-      setLoading(false);
-    });
 
-    return () => unsubscribe();
+      setLastVisible(docs[docs.length - 1]);
+      setHasMore(docs.length === PAGE_SIZE);
+
+      setProducts(prev => {
+        const newProducts = loadMore ? [...prev, ...productsData] : productsData;
+        updateCategories(newProducts);
+        return newProducts;
+      });
+      setTotalLoaded(prev => (loadMore ? prev + docs.length : docs.length));
+    } catch (error) {
+      console.error('Error loading products:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load initial products on mount
+  useEffect(() => {
+    loadProducts(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const updateCategories = (productList) => {
@@ -248,6 +284,8 @@ export const ProductProvider = ({ children }) => {
     products,
     categories,
     loading,
+    hasMore,
+    loadProducts,
     createProduct,
     updateProduct,
     deleteProduct,

@@ -74,14 +74,12 @@ const ProductDetail = () => {
   };
 
   const handleAddToCart = () => {
-    // Set price to the base price (original, not discounted)
-    // The discountPercent is kept so getCartTotal() and order saving will apply it consistently
+    // Pass base price; CartContext will apply discount once and store the final unit price.
     const basePrice = selectedSize ? parseFloat(selectedSize.price) : product.price;
     const item = {
       ...product,
       selectedSize: selectedSize ? selectedSize.name : null,
       price: basePrice,
-      // Keep the product's discountPercent so getEffectivePrice() in CartContext applies it
       discountPercent: product.discountPercent || 0
     };
     addToCart(item, quantity, selectedSize ? selectedSize.name : null);

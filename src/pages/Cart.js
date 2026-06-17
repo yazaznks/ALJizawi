@@ -13,7 +13,7 @@ import {
 
 const Cart = () => {
   const navigate = useNavigate();
-  const { cart, removeFromCart, updateQuantity, getCartTotal, clearCart } = useCart();
+  const { cart, removeFromCart, updateQuantity, getCartTotal, getCartCount, clearCart } = useCart();
   const { t, formatCurrency } = useLanguage();
   const [customerInfo, setCustomerInfo] = useState({
     name: '',
@@ -54,7 +54,7 @@ const Cart = () => {
           name: item.name,
           selectedSize: item.selectedSize || null,
           quantity: item.quantity,
-          price: item.discountPercent ? item.price * (100 - item.discountPercent) / 100 : item.price
+          price: item.price
         })),
         customerInfo: {
           name: customerInfo.name,
@@ -86,7 +86,21 @@ const Cart = () => {
       setCustomerInfo({ name: '', phone: '' });
       setShippingAddress({ governorate: '', street: '', building: '' });
 
-      setSuccess('تم تقديم الطلب بنجاح، سيتواصل معك مندوب التوصيل خلال ١-٧ ايام حسب الوصول الى منطقتك');
+      const totalItems = getCartCount();
+      let deliveryMessage;
+      if (totalItems >= 1 && totalItems <= 5) {
+        deliveryMessage = 'تم تقديم الطلب بنجاح، سيتواصل معك مندوب التوصيل خلال ١-١٠ ايام حسب الوصول الى منطقتك';
+      } else if (totalItems >= 6 && totalItems <= 10) {
+        deliveryMessage = 'تم تقديم الطلب بنجاح، سيتواصل معك مندوب التوصيل خلال ١-٧ ايام حسب الوصول الى منطقتك';
+      } else if (totalItems >= 11 && totalItems <= 20) {
+        deliveryMessage = 'تم تقديم الطلب بنجاح، سيتواصل معك مندوب التوصيل خلال ١-٣ ايام حسب الوصول الى منطقتك';
+      } else if (totalItems >= 21 && totalItems <= 50) {
+        deliveryMessage = 'تم تقديم الطلب بنجاح، سيتواصل معك مندوب التوصيل خلال يومين من تقديم الطلب';
+      } else {
+        deliveryMessage = 'تم تقديم الطلب بنجاح، سيتواصل معك مندوب التوصيل خلال يومين من تقديم الطلب';
+      }
+
+      setSuccess(deliveryMessage);
 
     } catch (error) {
       setSuccess('خطأ في تقديم الطلب: ' + error.message);
@@ -248,11 +262,11 @@ const Cart = () => {
                     <span style={{fontWeight: '600'}}>الحجم:</span> {item.selectedSize}
                   </p>
                 )}
-               <p className="product-price">
+                <p className="product-price">
                   {item.discountPercent ? (
                     <>
-                      <span style={{textDecoration: 'line-through', color: '#999', marginRight: '6px',marginLeft: '6px', fontSize: '14px'}}>{formatCurrency(item.price)}</span>
-                      <span style={{color: '#e74c3c', fontWeight: 'bold'}}>{formatCurrency(item.price * (100 - item.discountPercent) / 100)}</span>
+                      <span style={{textDecoration: 'line-through', color: '#999', marginRight: '6px', marginLeft: '6px', fontSize: '14px'}}>{formatCurrency(item.originalPrice || item.price)}</span>
+                      <span style={{color: '#e74c3c', fontWeight: 'bold'}}>{formatCurrency(item.price)}</span>
                     </>
                   ) : (
                     formatCurrency(item.price)
