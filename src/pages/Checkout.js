@@ -12,6 +12,7 @@ const Checkout = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [lastOrder, setLastOrder] = useState(null); // Store last submitted order for WhatsApp
   
   const [customerInfo, setCustomerInfo] = useState({
     name: '',
@@ -76,7 +77,9 @@ const Checkout = () => {
       // Save order to Firestore
       await addDoc(collection(db, 'ecommerce_orders'), orderData);
 
-      setSuccess('تم تقييم الطلب بنجاح، سيتواصل معك مندوب التوصيل خلال ١-٧ ايام حسب الوصول الى منطقتك');
+      // Store order details for WhatsApp sharing
+      setLastOrder(orderData);
+      setSuccess('تم تقديم الطلب بنجاح، سيتواصل معك مندوب التوصيل خلال ١-٧ ايام حسب الوصول الى منطقتك');
       clearCart();
     } catch (error) {
       setError('خطأ في تقديم الطلب');
@@ -100,10 +103,52 @@ const Checkout = () => {
             <div className="modal-body" style={{textAlign: 'center', padding: '40px 30px'}}>
               <div style={{fontSize: '56px', marginBottom: '16px'}}>✅</div>
               <h2 style={{margin: '0 0 16px', fontSize: '18px', lineHeight: '1.6', color: '#262626'}}>{success}</h2>
+              {lastOrder && (
+                <button
+                  onClick={() => {
+                    // Build WhatsApp message with order details
+                    const itemsList = lastOrder.items.map(item => {
+                      const amount = parseFloat(item.price * item.quantity);
+                      const formattedAmount = amount % 1 === 0 ? amount.toFixed(0) : amount.toFixed(1);
+                      const sizeText = item.selectedSize ? ` (${item.selectedSize})` : '';
+                      return `* ${item.name}${sizeText}: العدد:${item.quantity} - السعر ${formattedAmount} د.أ`;
+                    }).join('\n');
+                    const totalAmount = parseFloat(lastOrder.pricing?.total || 0);
+                    const formattedTotal = totalAmount % 1 === 0 ? totalAmount.toFixed(0) : totalAmount.toFixed(1);
+                    const message =
+                      `*طلب جديد*\n` +
+                      `رقم الطلب: ${lastOrder.orderNumber}\n` +
+                      `الاسم: ${lastOrder.customerInfo?.name}\n` +
+                      `الهاتف: ${lastOrder.customerInfo?.phone}\n` +
+                      `العنوان: ${lastOrder.shippingAddress?.governorate || ''}, ${lastOrder.shippingAddress?.street || ''}, ${lastOrder.shippingAddress?.building || ''}\n` +
+                      `المنتجات:\n${itemsList}\n` +
+                      `الإجمالي: ${formattedTotal} د.أ`;
+                    const whatsappUrl = `https://wa.me/962771530015?text=${encodeURIComponent(message)}`;
+                    window.open(whatsappUrl, '_blank');
+                  }}
+                  style={{
+                    marginTop: '12px',
+                    padding: '12px 24px',
+                    fontSize: '15px',
+                    fontWeight: '600',
+                    borderRadius: '8px',
+                    border: '2px solid #25D366',
+                    background: '#25D366',
+                    color: 'white',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  📱 إرسال الطلب عبر واتساب
+                </button>
+              )}
+              <br />
               <button
                 onClick={() => { setSuccess(''); navigate('/products'); }}
                 className="btn-success"
-                style={{marginTop: '24px', padding: '12px 40px', fontSize: '16px', fontWeight: '600', borderRadius: '8px'}}
+                style={{marginTop: '16px', padding: '12px 40px', fontSize: '16px', fontWeight: '600', borderRadius: '8px'}}
               >
                 موافق
               </button>
@@ -187,7 +232,7 @@ const Checkout = () => {
             <h2>ملخص الطلب</h2>
             {cart.map(item => (
               <div key={item._id} style={{padding: '10px 0', borderBottom: '1px solid #ddd'}}>
-            <div>{item.name} x {item.quantity}</div>
+            <div>{item.name}{item.selectedSize ? ` (${item.selectedSize})` : ''} x {item.quantity}</div>
                 <div>{formatCurrency(item.price * item.quantity)}</div>
               </div>
             ))}

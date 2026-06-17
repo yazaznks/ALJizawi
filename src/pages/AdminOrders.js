@@ -146,11 +146,19 @@ const AdminOrders = () => {
     setSelectedIds(new Set());
   };
 
+  // Format a single order item for WhatsApp
+  const formatItemForWhatsApp = (item) => {
+    const amount = parseFloat(item.price * item.quantity);
+    const formattedAmount = amount % 1 === 0 ? amount.toFixed(0) : amount.toFixed(1);
+    const sizeText = item.selectedSize ? ` (${item.selectedSize})` : '';
+    return `* ${item.name}${sizeText}: العدد:${item.quantity} - السعر ${formattedAmount} د.أ`;
+  };
+
   // Format a single order for WhatsApp message
   const formatOrderForWhatsApp = (order, index) => {
-    const itemsList = order.items?.map(item =>
-      `  * ${item.name}${item.selectedSize ? ` (${item.selectedSize})` : ''} x${item.quantity} - ${formatCurrency(item.price * item.quantity)}`
-    ).join('\n');
+    const itemsList = order.items?.map(item => formatItemForWhatsApp(item)).join('\n');
+    const totalAmount = parseFloat(order.pricing?.total || 0);
+    const formattedTotal = totalAmount % 1 === 0 ? totalAmount.toFixed(0) : totalAmount.toFixed(1);
 
     return (
       `*طلب ${index + 1}: #${order.orderNumber}*\n` +
@@ -158,7 +166,7 @@ const AdminOrders = () => {
       `الهاتف: ${order.customerInfo?.phone || 'غير محدد'}\n` +
       `العنوان: ${order.shippingAddress?.governorate || ''}, ${order.shippingAddress?.street || ''}, ${order.shippingAddress?.building || ''}\n` +
       `المنتجات:\n${itemsList || '  لا توجد منتجات'}\n` +
-      `الإجمالي: ${formatCurrency(order.pricing?.total || 0)}\n` +
+      `الإجمالي: ${formattedTotal} د.أ\n` +
       `التاريخ: ${order.createdAt ? new Date(order.createdAt).toLocaleDateString() : '-'}\n`
     );
   };
