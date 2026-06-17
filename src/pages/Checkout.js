@@ -108,10 +108,12 @@ const Checkout = () => {
                   onClick={() => {
                     // Build WhatsApp message with order details
                     const itemsList = lastOrder.items.map(item => {
-                      const amount = parseFloat(item.price * item.quantity);
-                      const formattedAmount = amount % 1 === 0 ? amount.toFixed(0) : amount.toFixed(1);
+                      const unitPrice = parseFloat(item.price);
+                      const formattedUnit = unitPrice % 1 === 0 ? unitPrice.toFixed(0) : unitPrice.toFixed(1);
+                      const lineTotal = unitPrice * item.quantity;
+                      const formattedTotal = lineTotal % 1 === 0 ? lineTotal.toFixed(0) : lineTotal.toFixed(1);
                       const sizeText = item.selectedSize ? ` (${item.selectedSize})` : '';
-                      return `* ${item.name}${sizeText}: العدد:${item.quantity} - السعر ${formattedAmount} د.أ`;
+                      return `* ${item.name}${sizeText}: ${formattedUnit} د.أ × ${item.quantity} = ${formattedTotal} د.أ`;
                     }).join('\n');
                     const totalAmount = parseFloat(lastOrder.pricing?.total || 0);
                     const formattedTotal = totalAmount % 1 === 0 ? totalAmount.toFixed(0) : totalAmount.toFixed(1);
@@ -232,8 +234,8 @@ const Checkout = () => {
             <h2>ملخص الطلب</h2>
             {cart.map(item => (
               <div key={item._id} style={{padding: '10px 0', borderBottom: '1px solid #ddd'}}>
-            <div>{item.name}{item.selectedSize ? ` (${item.selectedSize})` : ''} x {item.quantity}</div>
-                <div>{formatCurrency(item.price * item.quantity)}</div>
+            <div>{item.name}{item.selectedSize ? ` (${item.selectedSize})` : ''}</div>
+                <div>{formatCurrency(item.price)} × {item.quantity} = {formatCurrency(item.price * item.quantity)}</div>
               </div>
             ))}
 

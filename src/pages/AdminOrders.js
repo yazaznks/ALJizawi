@@ -148,10 +148,12 @@ const AdminOrders = () => {
 
   // Format a single order item for WhatsApp
   const formatItemForWhatsApp = (item) => {
-    const amount = parseFloat(item.price * item.quantity);
-    const formattedAmount = amount % 1 === 0 ? amount.toFixed(0) : amount.toFixed(1);
+    const unitPrice = parseFloat(item.price);
+    const formattedUnit = unitPrice % 1 === 0 ? unitPrice.toFixed(0) : unitPrice.toFixed(1);
+    const lineTotal = unitPrice * item.quantity;
+    const formattedTotal = lineTotal % 1 === 0 ? lineTotal.toFixed(0) : lineTotal.toFixed(1);
     const sizeText = item.selectedSize ? ` (${item.selectedSize})` : '';
-    return `* ${item.name}${sizeText}: العدد:${item.quantity} - السعر ${formattedAmount} د.أ`;
+    return `* ${item.name}${sizeText}: ${formattedUnit} د.أ × ${item.quantity} = ${formattedTotal} د.أ`;
   };
 
   // Format a single order for WhatsApp message
