@@ -31,7 +31,7 @@ const CartStickyBar = () => {
         right: 0,
         background: 'linear-gradient(135deg, #27ae60, #2ecc71)',
         color: 'white',
-        padding: '14px 20px',
+        padding: '12px 16px',
         borderRadius: '16px',
         margin: '0 12px 12px 12px',
         width: 'calc(100% - 24px)',
@@ -44,28 +44,21 @@ const CartStickyBar = () => {
         direction: 'rtl'
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <span style={{ fontSize: '24px' }}>🛒</span>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-          <span style={{ fontSize: '15px', fontWeight: '600' }}>
-            {t('cart')} ({cartCount} {cartCount === 1 ? 'منتج' : 'منتجات'})
-          </span>
-          <span style={{ fontSize: '13px', opacity: 0.95 }}>
-            اضغط لإتمام الطلب
-          </span>
-        </div>
-      </div>
+      <span style={{ fontSize: '14px', fontWeight: '600' }}>
+        {t('cart')} ({cartCount} {cartCount === 1 ? 'منتج' : 'منتجات'})
+      </span>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-        <span style={{ fontSize: '18px', fontWeight: '700' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <span style={{ fontSize: '16px', fontWeight: '700' }}>
           {formatCurrency(cartTotal)}
         </span>
         <span style={{
           background: 'rgba(255,255,255,0.2)',
-          padding: '8px 16px',
+          padding: '6px 12px',
           borderRadius: '8px',
-          fontSize: '14px',
-          fontWeight: '600'
+          fontSize: '13px',
+          fontWeight: '600',
+          whiteSpace: 'nowrap'
         }}>
           إتمام الطلب ←
         </span>
