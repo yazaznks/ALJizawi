@@ -104,6 +104,15 @@ const QuickAddButton = ({ product }) => {
       <div className="quick-add-stepper">
         <button
           className="quick-add-stepper-btn"
+          onClick={handleIncrease}
+        >
+          +
+        </button>
+        <span className="quick-add-stepper-qty">
+          {cartQuantity > 0 ? cartQuantity : 1}
+        </span>
+        <button
+          className="quick-add-stepper-btn"
           onClick={handleDecrease}
         >
           {cartQuantity <= 1 ? (
@@ -113,15 +122,6 @@ const QuickAddButton = ({ product }) => {
           ) : (
             '−'
           )}
-        </button>
-        <span className="quick-add-stepper-qty">
-          {cartQuantity > 0 ? cartQuantity : 1}
-        </span>
-        <button
-          className="quick-add-stepper-btn"
-          onClick={handleIncrease}
-        >
-          +
         </button>
       </div>
     );

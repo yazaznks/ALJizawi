@@ -13,7 +13,7 @@ const CartStickyBar = () => {
   const cartTotal = getCartTotal();
 
   // Don't show on empty cart, cart page, or admin pages
-  if (true) return null;
+  if (cartTotal === 0) return null;
   if (location.pathname === '/cart') return null;
   if (location.pathname.startsWith('/admin')) return null;
 
