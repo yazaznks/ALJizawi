@@ -32,7 +32,7 @@ const CartStickyBar = () => {
         background: 'linear-gradient(135deg, #27ae60, #2ecc71)',
         color: 'white',
         padding: '12px 16px',
-        borderRadius: '16px',
+        borderRadius: '28px',
         margin: '0 12px 12px 12px',
         width: 'calc(100% - 24px)',
         display: 'flex',
@@ -54,8 +54,8 @@ const CartStickyBar = () => {
         </span>
         <span style={{
           background: 'rgba(255,255,255,0.2)',
-          padding: '6px 12px',
-          borderRadius: '8px',
+          padding: '6px 14px',
+          borderRadius: '20px',
           fontSize: '13px',
           fontWeight: '600',
           whiteSpace: 'nowrap'
