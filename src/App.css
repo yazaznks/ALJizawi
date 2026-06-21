@@ -1073,12 +1073,16 @@ a:hover {
   }
 
   .products-grid {
-    grid-template-columns: 2fr;
-    gap: 12px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
   }
 
   .product-card {
     max-width: 100%;
+  }
+
+  .product-image {
+    height: 200px;
   }
 
   .stats-grid {
