@@ -1012,15 +1012,21 @@ a:hover {
   }
 
   .product-name {
-    font-size: 18px;
-    -webkit-line-clamp: 1;
+    font-size: 14px;
+    -webkit-line-clamp: none;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
     letter-spacing: 0;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
+    line-height: 1.3;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
   }
 
   .product-price {
-    font-size: 17px;
-    margin: 4px 0;
+    font-size: 15px;
+    margin: 2px 0;
   }
 
   /* Order details governorate filter on mobile */
@@ -1074,7 +1080,7 @@ a:hover {
 
   .products-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+    gap: 8px;
   }
 
   .product-card {
@@ -1082,7 +1088,30 @@ a:hover {
   }
 
   .product-image {
-    height: 200px;
+    height: 180px;
+  }
+
+  .product-name {
+    font-size: 13px;
+    -webkit-line-clamp: none;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+    letter-spacing: 0;
+    margin-bottom: 3px;
+    line-height: 1.25;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-word;
+  }
+
+  .product-price {
+    font-size: 14px;
+    margin: 1px 0;
+  }
+
+  .product-info {
+    padding: 8px 10px 10px;
   }
 
   .stats-grid {
@@ -1188,6 +1217,7 @@ a:hover {
   width: 90%;
   max-height: 90vh;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
