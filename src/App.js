@@ -5,6 +5,7 @@ import { ProductProvider } from './context/ProductContext';
 import { CartProvider } from './context/CartContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { BannerProvider } from './context/BannerContext';
+import { OfferProvider } from './context/OfferContext';
 import Navbar from './components/Navbar';
 import CartStickyBar from './components/CartStickyBar';
 import Products from './pages/Products';
@@ -15,6 +16,7 @@ import Cart from './pages/Cart';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminProducts from './pages/AdminProducts';
 import AdminOrders from './pages/AdminOrders';
+import AdminOffers from './pages/AdminOffers';
 
 import AdminAds from './pages/AdminAds';
 import PrivateRoute from './components/PrivateRoute';
@@ -27,6 +29,7 @@ function App() {
         <ProductProvider>
           <CartProvider>
             <BannerProvider>
+            <OfferProvider>
             <Router>
             <div className="App">
               <Navbar />
@@ -70,9 +73,18 @@ function App() {
                   </PrivateRoute>
                 }
               />
+              <Route
+                path="/admin/offers"
+                element={
+                  <PrivateRoute adminOnly={true}>
+                    <AdminOffers />
+                  </PrivateRoute>
+                }
+              />
               </Routes>
             </div>
           </Router>
+          </OfferProvider>
         </BannerProvider>
         </CartProvider>
         </ProductProvider>

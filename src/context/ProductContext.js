@@ -32,7 +32,7 @@ export const ProductProvider = ({ children }) => {
   const [lastVisible, setLastVisible] = useState(null);
   const [hasMore, setHasMore] = useState(true);
   const [totalLoaded, setTotalLoaded] = useState(0);
-  const PAGE_SIZE = 12;
+  const PAGE_SIZE = 500;
 
   // Load initial products from Firebase
   const loadProducts = async (loadMore = false) => {

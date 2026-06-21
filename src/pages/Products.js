@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useProducts } from '../context/ProductContext';
 import { useBanner } from '../context/BannerContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useCart } from '../context/CartContext';
+import { useOffers } from '../context/OfferContext';
 
 // Helper: get optimized image URL with Cloudflare image transformation for smaller thumbnails
 const getOptimizedImageUrl = (url, width = 400) => {
@@ -455,6 +456,16 @@ const Products = () => {
 
   const activeBanners = banners.filter(b => b.active);
 
+  // Load offers for the offers section
+  const { offers, loading: offersLoading } = useOffers();
+  
+  // Only active offers and matching existing products
+  const activeOffers = offers.filter(o => 
+    o.active && 
+    products.some(p => p._id === o.buyProductId) && 
+    products.some(p => p._id === o.getProductId)
+  );
+  
   // Split products: featured first, then regular
   const featured = products.filter(p => p.featured);
   const regular = products.filter(p => !p.featured);
@@ -575,6 +586,125 @@ const Products = () => {
         <p style={{textAlign: 'center', padding: '40px'}}>{t('noProducts') || 'لا توجد منتجات'}</p>
       ) : (
         <>
+          {/* Offers Section - اقوى العروض */}
+          {activeOffers.length > 0 && (
+            <>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                marginTop: '36px',
+                marginBottom: '24px'
+              }}>
+                <span style={{
+                  background: 'linear-gradient(135deg, #ef4444, #ec4899)',
+                  color: 'white',
+                  fontSize: '22px',
+                  padding: '8px 14px',
+                  borderRadius: '14px',
+                  lineHeight: 1
+                }}>🔥</span>
+                <h2 style={{
+                  margin: 0,
+                  padding: 0,
+                  fontSize: '28px',
+                  fontWeight: '800',
+                  background: 'linear-gradient(135deg, #ef4444, #ec4899)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text'
+                }}>
+                  اقوى العروض
+                </h2>
+              </div>
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '16px'
+              }}>
+                {activeOffers.map(offer => {
+                  const buyProduct = products.find(p => p._id === offer.buyProductId);
+                  const getProduct = products.find(p => p._id === offer.getProductId);
+                  if (!buyProduct || !getProduct) return null;
+                  return (
+                    <Link
+                      key={offer.id}
+                      to={`/products/${buyProduct._id}`}
+                      style={{textDecoration: 'none', color: 'inherit'}}
+                    >
+                      <div style={{
+                        background: 'linear-gradient(135deg, #fff7ed, #ffedd5)',
+                        borderRadius: '20px',
+                        padding: '20px 24px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '16px',
+                        border: '2px solid rgba(249, 115, 22, 0.2)',
+                        transition: 'all 0.2s ease',
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 12px rgba(249, 115, 22, 0.08)'
+                      }}>
+                        <div style={{
+                          width: '70px',
+                          height: '70px',
+                          borderRadius: '16px',
+                          background: '#fff',
+                          overflow: 'hidden',
+                          flexShrink: 0,
+                          border: '1px solid #fee2e2'
+                        }}>
+                          {getProduct.images && getProduct.images[0] ? (
+                            <img 
+                              src={getOptimizedImageUrl(getProduct.images[0].url, 120)} 
+                              alt={getProduct.name}
+                              style={{width: '100%', height: '100%', objectFit: 'cover'}}
+                            />
+                          ) : (
+                            <span style={{fontSize: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%'}}>📦</span>
+                          )}
+                        </div>
+                        <div style={{flex: 1, minWidth: 0}}>
+                          <div style={{
+                            fontSize: '16px',
+                            fontWeight: '700',
+                            color: '#9a3412',
+                            marginBottom: '6px',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                          }}>
+                            🛒 اشتري {offer.buyQuantity} من "{buyProduct.name}" {offer.buyProductSize ? <span style={{fontSize: '14px', fontWeight: '600', color: '#6366f1'}}>(حجم: {offer.buyProductSize})</span> : ''}
+                          </div>
+                          <div style={{
+                            fontSize: '16px',
+                            fontWeight: '700',
+                            color: '#065f46',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                          }}>
+                            🎁 واحصل على "{getProduct.name}" {offer.getProductSize ? <span style={{fontSize: '14px', fontWeight: '600', color: '#6366f1'}}>(حجم: {offer.getProductSize})</span> : ''} بسعر <span style={{fontSize: '18px'}}>{formatCurrency(offer.getPrice)}</span>
+                          </div>
+                        </div>
+                        <div style={{
+                          background: 'linear-gradient(135deg, #ef4444, #ec4899)',
+                          color: 'white',
+                          padding: '8px 16px',
+                          borderRadius: '12px',
+                          fontWeight: '700',
+                          fontSize: '14px',
+                          flexShrink: 0
+                        }}>
+                          عرض خاص 🔥
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
           {/* Featured Products Section */}
           {featured.length > 0 && (
             <>

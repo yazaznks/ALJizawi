@@ -138,6 +138,7 @@ const AdminProducts = () => {
         <Link to="/admin/products">{t('products')}</Link>
         <Link to="/admin/orders">{t('orders')}</Link>
         <Link to="/admin/ads">{t('ads')}</Link>
+        <Link to="/admin/offers">العروض</Link>
       </div>
 
       <div style={{marginBottom: '20px'}}>
