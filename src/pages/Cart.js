@@ -385,7 +385,7 @@ const Cart = () => {
               </div>
 
               <div className="form-group">
-                <label>الشارع *</label>
+                <label>المنطقة *</label>
                 <input
                   type="text"
                   value={shippingAddress.street}

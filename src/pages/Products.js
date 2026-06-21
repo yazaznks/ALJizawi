@@ -455,6 +455,11 @@ const Products = () => {
 
   const activeBanners = banners.filter(b => b.active);
 
+  // Split products: featured first, then regular
+  const featured = products.filter(p => p.featured);
+  const regular = products.filter(p => !p.featured);
+  const sortedProducts = [...featured, ...regular];
+
   useEffect(() => {
     if (activeBanners.length <= 1) return;
     const interval = setInterval(() => {
@@ -560,8 +565,6 @@ const Products = () => {
         </div>
       )}
       
-      <h1>{t('allProducts')}</h1>
-      
       {loading && products.length === 0 ? (
         <div className="products-grid">
           {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(i => (
@@ -572,8 +575,74 @@ const Products = () => {
         <p style={{textAlign: 'center', padding: '40px'}}>{t('noProducts') || 'لا توجد منتجات'}</p>
       ) : (
         <>
+          {/* Featured Products Section */}
+          {featured.length > 0 && (
+            <>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                marginTop: '32px',
+                marginBottom: '20px'
+              }}>
+                <span style={{
+                  background: 'linear-gradient(135deg, #f59e0b, #f97316)',
+                  color: 'white',
+                  fontSize: '20px',
+                  padding: '8px 12px',
+                  borderRadius: '12px',
+                  lineHeight: 1
+                }}>⭐</span>
+                <h2 style={{
+                  margin: 0,
+                  padding: 0,
+                  fontSize: '26px',
+                  background: 'linear-gradient(135deg, #f59e0b, #f97316)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text'
+                }}>
+                  المنتجات المميزة
+                </h2>
+              </div>
+              <div className="products-grid">
+                {featured.map(product => (
+                  <ProductCard key={product._id} product={product} />
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* All Products Section */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            marginTop: featured.length > 0 ? '48px' : '32px',
+            marginBottom: '20px'
+          }}>
+            <span style={{
+              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+              color: 'white',
+              fontSize: '18px',
+              padding: '8px 12px',
+              borderRadius: '12px',
+              lineHeight: 1
+            }}>📦</span>
+            <h2 style={{
+              margin: 0,
+              padding: 0,
+              fontSize: '26px',
+              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text'
+            }}>
+              {t('allProducts')}
+            </h2>
+          </div>
           <div className="products-grid">
-            {products.map(product => (
+            {regular.map(product => (
               <ProductCard key={product._id} product={product} />
             ))}
           </div>

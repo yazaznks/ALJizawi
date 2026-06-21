@@ -6,7 +6,7 @@ import { useLanguage } from '../context/LanguageContext';
 
 const AdminProducts = () => {
   const { t, formatCurrency } = useLanguage();
-  const { products, loading, createProduct, updateProduct, deleteProduct } = useProducts();
+  const { products, loading, hasMore, loadProducts, createProduct, updateProduct, deleteProduct } = useProducts();
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [keptImages, setKeptImages] = useState([]);
@@ -390,6 +390,22 @@ const AdminProducts = () => {
           </tbody>
         </table>
         </div>
+        {hasMore && (
+          <div style={{ textAlign: 'center', padding: '20px' }}>
+            <button
+              onClick={() => loadProducts(true)}
+              className="btn-primary"
+              disabled={loading}
+            >
+              {loading ? 'جاري التحميل...' : 'تحميل المزيد من المنتجات'}
+            </button>
+          </div>
+        )}
+        {!hasMore && products.length > 12 && (
+          <p style={{ textAlign: 'center', color: '#999', fontSize: '14px', padding: '10px' }}>
+            تم تحميل جميع المنتجات ({products.length})
+          </p>
+        )}
       </div>
     </div>
   );

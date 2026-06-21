@@ -501,8 +501,8 @@ const AdminOrders = () => {
               <table style={{width: '100%', borderCollapse: 'collapse'}}>
                 <tbody>
                   <tr><td style={{padding: '6px 10px', fontWeight: '600', width: '120px'}}>المحافظة:</td><td style={{padding: '6px 10px'}}>{selectedOrder.shippingAddress?.governorate}</td></tr>
-                  <tr><td style={{padding: '6px 10px', fontWeight: '600'}}>الشارع:</td><td style={{padding: '6px 10px'}}>{selectedOrder.shippingAddress?.street}</td></tr>
-                  <tr><td style={{padding: '6px 10px', fontWeight: '600'}}> أو معلم /رقم البناية:</td><td style={{padding: '6px 10px'}}>{selectedOrder.shippingAddress?.building}</td></tr>
+                  <tr><td style={{padding: '6px 10px', fontWeight: '600'}}>المنطقة:</td><td style={{padding: '6px 10px'}}>{selectedOrder.shippingAddress?.street}</td></tr>
+                  <tr><td style={{padding: '6px 10px', fontWeight: '600'}}>رقم البناية أو مَعلَم قريب:</td><td style={{padding: '6px 10px'}}>{selectedOrder.shippingAddress?.building}</td></tr>
                 </tbody>
               </table>
             </div>
