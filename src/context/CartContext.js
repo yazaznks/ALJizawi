@@ -1,6 +1,4 @@
-import React, { createContext, useState, useContext, useEffect, useRef, useCallback } from 'react';
-import { useOffers } from './OfferContext';
-import { useProducts } from './ProductContext';
+import React, { createContext, useState, useContext, useEffect } from 'react';
 
 const CartContext = createContext();
 
@@ -20,6 +18,26 @@ export const CartProvider = ({ children }) => {
 
   useEffect(() => {
     localStorage.setItem('cart', JSON.stringify(cart));
+    // Auto-clean stale offer items whenever cart changes
+    setCart(prevCart => {
+      const hasStale = prevCart.some(item => {
+        if (!item.linkedBuyKey) return false;
+        const buyItem = prevCart.find(b => b.cartKey === item.linkedBuyKey);
+        if (!buyItem) return true;
+        const requiredQty = item.offerBuyQuantity || 1;
+        if (buyItem.quantity < requiredQty) return true;
+        return false;
+      });
+      if (!hasStale) return prevCart;
+      return prevCart.filter(item => {
+        if (!item.linkedBuyKey) return true;
+        const buyItem = prevCart.find(b => b.cartKey === item.linkedBuyKey);
+        if (!buyItem) return false;
+        const requiredQty = item.offerBuyQuantity || 1;
+        if (buyItem.quantity < requiredQty) return false;
+        return true;
+      });
+    });
   }, [cart]);
 
   // Generate unique item key based on product ID and selected size (if any)
@@ -32,49 +50,43 @@ export const CartProvider = ({ children }) => {
 
     setCart(prevCart => {
       const existingItem = prevCart.find(item => item.cartKey === itemKey);
-      let updated;
 
       if (existingItem) {
-        updated = prevCart.map(item =>
+        return prevCart.map(item =>
           item.cartKey === itemKey
             ? { ...item, quantity: item.quantity + quantity }
             : item
         );
-      } else {
-        // Normalize price once
-        const discountPercent = product.discountPercent || 0;
-        const originalPrice = product.price;
-        const discountedPrice = discountPercent
-          ? originalPrice * (100 - discountPercent) / 100
-          : originalPrice;
-
-        updated = [...prevCart, {
-          ...product,
-          cartKey: itemKey,
-          selectedSize,
-          quantity,
-          price: discountedPrice,
-          originalPrice,
-          discountPercent
-        }];
       }
 
-      // Re-evaluate offers with the updated cart
-      if (offers && products) {
-        return applyOffersInternal(updated, offers, products);
-      }
-      return updated;
+      // Normalize price once: store the discounted unit price
+      const discountPercent = product.discountPercent || 0;
+      const originalPrice = product.price;
+      const discountedPrice = discountPercent
+        ? originalPrice * (100 - discountPercent) / 100
+        : originalPrice;
+
+      return [...prevCart, {
+        ...product,
+        cartKey: itemKey,
+        selectedSize,
+        quantity,
+        price: discountedPrice,
+        originalPrice,
+        discountPercent
+      }];
     });
   };
 
   const removeFromCart = (cartKey) => {
     setCart(prevCart => {
-      const updated = prevCart.filter(item => item.cartKey !== cartKey);
-      // Re-evaluate offers with the updated cart
-      if (offers && products) {
-        return applyOffersInternal(updated, offers, products);
-      }
-      return updated;
+      return prevCart.filter(item => {
+        // Remove the item itself
+        if (item.cartKey === cartKey) return false;
+        // Also remove any offer get-items linked to this buy product
+        if (item.linkedBuyKey === cartKey) return false;
+        return true;
+      });
     });
   };
 
@@ -88,11 +100,18 @@ export const CartProvider = ({ children }) => {
       const updated = prevCart.map(item =>
         item.cartKey === cartKey ? { ...item, quantity } : item
       );
-      // Re-evaluate offers with the updated cart
-      if (offers && products) {
-        return applyOffersInternal(updated, offers, products);
-      }
-      return updated;
+
+      // Cleanup: remove any get-items whose linked buy product has dropped below threshold
+      return updated.filter(item => {
+        // Keep non-offer items
+        if (!item.linkedBuyKey) return true;
+        // Check if linked buy product still exists and meets threshold
+        const buyItem = updated.find(b => b.cartKey === item.linkedBuyKey);
+        if (!buyItem) return false; // Buy product removed
+        const requiredQty = item.offerBuyQuantity || 1;
+        if (buyItem.quantity < requiredQty) return false; // Below threshold
+        return true;
+      });
     });
   };
 
@@ -113,80 +132,19 @@ export const CartProvider = ({ children }) => {
     return cart.reduce((count, item) => count + item.quantity, 0);
   };
 
-  // Auto-apply offers: if cart contains enough of the buy product,
-  // automatically add the get product at the offer price (if not already there)
-  const { offers } = useOffers();
-  const { products } = useProducts();
-
-  // Pure function: apply offers to a given cart snapshot and return the new cart
-  const applyOffersInternal = (currentCart, offersList, allProducts) => {
-    if (!offersList || !allProducts) return currentCart;
-    const activeOffers = offersList.filter(o => o.active);
-    const updated = [...currentCart];
-
-    activeOffers.forEach(offer => {
-      const buyKey = offer.buyProductSize
-        ? `${offer.buyProductId}_${offer.buyProductSize}`
-        : offer.buyProductId;
-      const getKey = offer.getProductSize
-        ? `${offer.getProductId}_${offer.getProductSize}`
-        : offer.getProductId;
-
-      // Remove existing get item first (to handle updates/reprice)
-      const existingIdx = updated.findIndex(item => item.cartKey === getKey);
-      if (existingIdx !== -1) {
-        updated.splice(existingIdx, 1);
-      }
-
-      // Find buy item in cart
-      const buyItem = updated.find(item => item.cartKey === buyKey);
-      if (!buyItem) return;
-
-      // Check if quantity is enough
-      const buyQty = buyItem.quantity || 0;
-      const requiredQty = offer.buyQuantity || 1;
-      if (buyQty < requiredQty) return;
-
-      // Find the get product details
-      const getProduct = allProducts.find(p => p._id === offer.getProductId);
-      if (!getProduct) return;
-
-      // Use offer price
-      const offerPrice = parseFloat(offer.getPrice) || 0;
-      const getSize = offer.getProductSize || null;
-
-      updated.push({
-        ...getProduct,
-        cartKey: getKey,
-        selectedSize: getSize,
-        quantity: 1,
-        price: offerPrice,
-        originalPrice: getSize
-          ? (getProduct.sizes && getProduct.sizes.find(s => s.name === getSize))
-            ? parseFloat(getProduct.sizes.find(s => s.name === getSize).price)
-            : getProduct.price
-          : getProduct.price,
-        discountPercent: 0,
-        appliedOffer: true,
-        offerId: offer.id
+  // Force cleanup of stale offer items — can be called manually
+  const cleanCart = () => {
+    setCart(prevCart => {
+      return prevCart.filter(item => {
+        if (!item.linkedBuyKey) return true;
+        const buyItem = prevCart.find(b => b.cartKey === item.linkedBuyKey);
+        if (!buyItem) return false;
+        const requiredQty = item.offerBuyQuantity || 1;
+        if (buyItem.quantity < requiredQty) return false;
+        return true;
       });
     });
-
-    return updated;
   };
-
-  // Wrapper: reads current cart from state, applies offers, writes back
-  const applyOffers = useCallback((offersList, allProducts) => {
-    setCart(prevCart => applyOffersInternal(prevCart, offersList, allProducts));
-  }, []);
-
-  // Auto-apply offers whenever offers or products change
-  useEffect(() => {
-    if (offers && products && offers.length > 0 && products.length > 0) {
-      setCart(prevCart => applyOffersInternal(prevCart, offers, products));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [offers, products]);
 
   const value = {
     cart,
@@ -196,7 +154,7 @@ export const CartProvider = ({ children }) => {
     clearCart,
     getCartTotal,
     getCartCount,
-    applyOffers
+    cleanCart
   };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { useProducts } from '../context/ProductContext';
-import { collection, onSnapshot, query, orderBy, doc, updateDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
 const AdminOrders = () => {
@@ -55,6 +55,17 @@ const AdminOrders = () => {
 
     return () => unsubscribe();
   }, []);
+
+  const handleDeleteOrder = async (orderId) => {
+    if (window.confirm('هل أنت متأكد من حذف هذا الطلب بالكامل؟')) {
+      try {
+        await deleteDoc(doc(db, 'ecommerce_orders', orderId));
+      } catch (error) {
+        console.error('Error deleting order:', error);
+        alert('خطأ في حذف الطلب');
+      }
+    }
+  };
 
   const handleStatusChange = async (orderId, newStatus) => {
     try {
@@ -165,7 +176,7 @@ const AdminOrders = () => {
     return (
       `*طلب ${index + 1}: #${order.orderNumber}*\n` +
       `العميل: ${order.customerInfo?.name || 'غير محدد'}\n` +
-      `الهاتف: ${order.customerInfo?.phone || 'غير محدد'}\n` +
+    
       `العنوان: ${order.shippingAddress?.governorate || ''}, ${order.shippingAddress?.street || ''}, ${order.shippingAddress?.building || ''}\n` +
       `المنتجات:\n${itemsList || '  لا توجد منتجات'}\n` +
       `الإجمالي: ${formattedTotal} د.أ\n` +
@@ -331,19 +342,20 @@ const AdminOrders = () => {
               </th>
               <th>{t('orderNumber')}</th>
               <th>{t('customer')}</th>
-              <th>{t('phone')}</th>
+     
               <th>المحافظة</th>
               <th>رقم السائق</th>
               <th>{t('total')}</th>
               <th>{t('status')}</th>
               <th>{t('date')}</th>
               <th>{t('actions')}</th>
+              <th>حذف</th>
             </tr>
           </thead>
           <tbody>
             {filteredOrders.length === 0 ? (
               <tr>
-                <td colSpan="10" style={{textAlign: 'center', padding: '20px'}}>
+                <td colSpan="11" style={{textAlign: 'center', padding: '20px'}}>
                   لا توجد طلبات
                 </td>
               </tr>
@@ -369,7 +381,7 @@ const AdminOrders = () => {
                   </td>
                   <td>{order.orderNumber}</td>
                   <td>{order.customerInfo?.name}</td>
-                  <td>{order.customerInfo?.phone}</td>
+        
                   <td>{order.shippingAddress?.governorate}</td>
                   <td style={{direction: 'ltr', textAlign: 'left'}}>
                     {order.driverPhone ? normalizePhoneDisplay(order.driverPhone) : '-'}
@@ -398,6 +410,16 @@ const AdminOrders = () => {
                         <option key={opt.value} value={opt.value}>{opt.label}</option>
                       ))}
                     </select>
+                  </td>
+                  <td onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={() => handleDeleteOrder(order.id)}
+                      className="btn-danger"
+                      style={{padding: '4px 8px', fontSize: '12px', lineHeight: 1}}
+                      title="حذف الطلب"
+                    >
+                      ✕
+                    </button>
                   </td>
                 </tr>
                 );
@@ -515,8 +537,10 @@ const AdminOrders = () => {
                     <tr style={{background: '#f8f9fa'}}>
                       <th style={{padding: '8px 10px', textAlign: 'right', borderBottom: '1px solid #ddd'}}>الصورة</th>
                       <th style={{padding: '8px 10px', textAlign: 'right', borderBottom: '1px solid #ddd'}}>المنتج</th>
+          
                       <th style={{padding: '8px 10px', textAlign: 'center', borderBottom: '1px solid #ddd'}}>الكمية</th>
-                      <th style={{padding: '8px 10px', textAlign: 'left', borderBottom: '1px solid #ddd'}}>السعر</th>
+                      
+                      <th style={{padding: '8px 10px', textAlign: 'left', borderBottom: '1px solid #ddd'}}>المجموع</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -533,7 +557,8 @@ const AdminOrders = () => {
                         )}
                       </td>
                       <td style={{padding: '8px 10px', borderBottom: '1px solid #eee'}}>
-                        {item.name}
+                        {item.name} - 
+                        {formatCurrency(item.price)}
                         {item.selectedSize && (
                           <span style={{display: 'block', fontSize: '12px', color: '#666', marginTop: '2px'}}>
                             الحجم: {item.selectedSize}
@@ -541,6 +566,7 @@ const AdminOrders = () => {
                         )}
                       </td>
                       <td style={{padding: '8px 10px', textAlign: 'center', borderBottom: '1px solid #eee'}}>{item.quantity}</td>
+                     
                       <td style={{padding: '8px 10px', textAlign: 'left', borderBottom: '1px solid #eee'}}>{formatCurrency(item.price * item.quantity)}</td>
                     </tr>
                     );

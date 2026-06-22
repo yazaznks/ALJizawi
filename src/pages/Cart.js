@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useOffers } from '../context/OfferContext';
+import { useProducts } from '../context/ProductContext';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import {
@@ -11,9 +13,128 @@ import {
   getBestFreeDeliverySuggestion,
 } from '../services/deliveryConfig';
 
+const OfferSection = ({ item, offer, products, cart, addToCart, removeFromCart, updateQuantity, formatCurrency }) => {
+  const itemQty = item.quantity || 0;
+  const requiredQty = offer ? (offer.buyQuantity || 1) : 0;
+  const offerMet = offer && itemQty >= requiredQty;
+  const missingQty = offer ? Math.max(0, requiredQty - itemQty) : 0;
+  const getProduct = offer ? products.find(p => p._id === offer.getProductId) : null;
+
+  const getKey = offer
+    ? (offer.getProductSize ? `${offer.getProductId}_${offer.getProductSize}` : offer.getProductId)
+    : null;
+
+  const existingGet = getKey ? cart.find(c => c.cartKey === getKey) : null;
+  const getQty = existingGet ? existingGet.quantity : 0;
+
+  const handleMinus = () => {
+    if (!getKey) return;
+    if (existingGet) {
+      if (existingGet.quantity <= 1) {
+        removeFromCart(getKey);
+      } else {
+        updateQuantity(getKey, existingGet.quantity - 1);
+      }
+    }
+  };
+
+  const getLimit = offer?.getLimit || 0;
+
+  const handlePlus = () => {
+    if (!getKey) return;
+    if (existingGet) {
+      // Respect the limit
+      if (getLimit > 0 && existingGet.quantity >= getLimit) return;
+      updateQuantity(getKey, existingGet.quantity + 1);
+    } else if (getProduct) {
+      addToCart({
+        ...getProduct,
+        _id: offer.getProductId,
+        price: parseFloat(offer.getPrice) || 0,
+        discountPercent: 0,
+        offerGetItem: true,
+        linkedBuyKey: item.cartKey,
+        offerBuyQuantity: requiredQty
+      }, 1, offer.getProductSize || null);
+    }
+  };
+
+  if (!offer) return null;
+
+  return (
+    <div style={{
+      width: '100%',
+      marginTop: '12px',
+      padding: '12px 16px',
+      borderRadius: '12px',
+      background: offerMet ? '#f0fdf4' : '#fff7ed',
+      border: `1px solid ${offerMet ? '#86efac' : '#fed7aa'}`,
+      direction: 'rtl'
+    }}>
+      {!offerMet ? (
+        <div style={{fontSize: '14px', fontWeight: '600', color: '#9a3412', textAlign: 'center'}}>
+          🎁 أضف {missingQty} من "{item.name}" واحصل على "{getProduct?.name || ''}" بسعر {formatCurrency(offer.getPrice)}
+        </div>
+      ) : (
+        <>
+          <div style={{fontSize: '14px', fontWeight: '700', color: '#166534', marginBottom: '10px'}}>
+            🎉 تم تفعيل العرض! اشتري {requiredQty} واحصل على:
+            {getLimit > 0 && <span style={{fontWeight: '500', color: '#f97316', marginRight: '8px', fontSize: '13px'}}>(الحد الأقصى: {getLimit})</span>}
+          </div>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            padding: '10px 14px',
+            background: 'white',
+            borderRadius: '10px',
+            border: '1px solid #bbf7d0'
+          }}>
+            <div style={{
+              width: '50px', height: '50px', borderRadius: '10px',
+              background: '#f5f5f5', overflow: 'hidden', flexShrink: 0
+            }}>
+              {getProduct?.images?.[0] ? (
+                <img src={getProduct.images[0].url} alt={getProduct.name} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+              ) : (
+                <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: '24px'}}>🎁</div>
+              )}
+            </div>
+            <div style={{flex: 1}}>
+              <div style={{fontWeight: '700', fontSize: '14px', color: '#111'}}>
+                {getProduct?.name} {offer.getProductSize && <span style={{color: '#6366f1'}}>({offer.getProductSize})</span>}
+              </div>
+              <div style={{fontWeight: '700', fontSize: '16px', color: '#ef4444'}}>
+                {formatCurrency(offer.getPrice)}
+              </div>
+            </div>
+            <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}>
+              <button onClick={handleMinus} style={{
+                width: '32px', height: '32px', borderRadius: '8px',
+                border: '1px solid #ef4444', background: '#fef2f2',
+                color: '#ef4444', fontSize: '18px', fontWeight: '700',
+                cursor: 'pointer', display: 'flex', alignItems: 'center',
+                justifyContent: 'center', padding: 0, lineHeight: 1
+              }}>−</button>
+              <span style={{minWidth: '20px', textAlign: 'center', fontWeight: '700', fontSize: '15px'}}>{getQty}</span>
+              <button onClick={handlePlus} style={{
+                width: '32px', height: '32px', borderRadius: '8px',
+                border: '1px solid #22c55e', background: '#f0fdf4',
+                color: '#22c55e', fontSize: '18px', fontWeight: '700',
+                cursor: 'pointer', display: 'flex', alignItems: 'center',
+                justifyContent: 'center', padding: 0, lineHeight: 1
+              }}>+</button>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
 const Cart = () => {
   const navigate = useNavigate();
-  const { cart, removeFromCart, updateQuantity, getCartTotal, getCartCount, clearCart } = useCart();
+  const { cart, removeFromCart, updateQuantity, getCartTotal, getCartCount, clearCart, addToCart } = useCart();
   const { t, formatCurrency } = useLanguage();
   const [customerInfo, setCustomerInfo] = useState({
     name: '',
@@ -32,9 +153,7 @@ const Cart = () => {
   const deliveryFee = shippingAddress.governorate ? deliveryInfo.fee : null;
   const total = shippingAddress.governorate ? subtotal + deliveryInfo.fee : subtotal;
 
-  // Determine the best suggestion for free delivery (when no governorate is selected)
   const suggestion = !shippingAddress.governorate ? getBestFreeDeliverySuggestion(subtotal) : null;
-  // If a governorate with a freeThreshold is selected but not yet met, show progress
   const selectedGovConfig = shippingAddress.governorate ? DELIVERY_OFFERS[shippingAddress.governorate] : null;
   const needsMore = selectedGovConfig && selectedGovConfig.freeThreshold !== null && subtotal < selectedGovConfig.freeThreshold;
   const remainingForFree = needsMore ? selectedGovConfig.freeThreshold - subtotal : 0;
@@ -42,7 +161,19 @@ const Cart = () => {
     ? Math.min(100, (subtotal / selectedGovConfig.freeThreshold) * 100)
     : 0;
 
-  // Handle order placement
+  // Load offers and products for inline offer display
+  const { offers } = useOffers();
+  const { products: allProducts } = useProducts();
+
+  // For each cart item, find an applicable offer where this item is the buy product
+  const getOfferForItem = (item) => {
+    return offers.find(o => {
+      if (!o.active) return false;
+      const buyMatch = item.cartKey === o.buyProductId || item.cartKey === `${o.buyProductId}_${o.buyProductSize}`;
+      return buyMatch;
+    });
+  };
+
   const handlePlaceOrder = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -78,10 +209,8 @@ const Cart = () => {
         status: 'pending'
       };
 
-      // Save order to Firestore
       await addDoc(collection(db, 'ecommerce_orders'), orderData);
 
-      // Clear cart and reset form
       clearCart();
       setCustomerInfo({ name: '', phone: '' });
       setShippingAddress({ governorate: '', street: '', building: '' });
@@ -109,7 +238,6 @@ const Cart = () => {
     }
   };
 
-  // Show success/error modal BEFORE empty cart check, because clearCart runs on success
   if (success) {
     const isError = success.includes('خطأ');
     return (
@@ -147,9 +275,6 @@ const Cart = () => {
     <div className="container">
       <h1>{t('shoppingCart')}</h1>
 
-      {/* ========== FREE SHIPPING BANNERS ========== */}
-
-      {/* When a governorate with free threshold is selected but not met: show progress bar */}
       {shippingAddress.governorate && needsMore && !deliveryInfo.isFree && (
         <div className="card" style={{
           background: 'linear-gradient(135deg, #fff8e1, #ffecb3)',
@@ -168,7 +293,6 @@ const Cart = () => {
               </p>
             </div>
           </div>
-          {/* Progress bar */}
           <div style={{
             width: '100%',
             height: '8px',
@@ -191,7 +315,6 @@ const Cart = () => {
         </div>
       )}
 
-      {/* When the selected governorate qualifies for free delivery: celebration */}
       {shippingAddress.governorate && deliveryInfo.isFree && (
         <div className="card" style={{
           background: 'linear-gradient(135deg, #e8f5e9, #c8e6c9)',
@@ -207,7 +330,6 @@ const Cart = () => {
         </div>
       )}
 
-      {/* When no governorate selected: suggest the best option */}
       {!shippingAddress.governorate && suggestion && suggestion.remaining > 0 && (
         <div className="card" style={{
           background: 'linear-gradient(135deg, #e3f2fd, #bbdefb)',
@@ -222,14 +344,13 @@ const Cart = () => {
                 وفر على التوصيل!
               </strong>
               <p style={{fontSize: '13px', color: '#455a64', marginTop: '2px'}}>
-                أضف {formatCurrency(suggestion.remaining)} فقط إلى سلّتك واحصل على توصيل مجاني إلى {suggestion.governorate} (عند الطلب بقيمة {formatCurrency(suggestion.threshold)} أو أكثر)
+                أضف {formatCurrency(suggestion.remaining)} فقط إلى سلّتك واحصل على توصيل مجاني إلى {suggestion.governorate}
               </p>
             </div>
           </div>
         </div>
       )}
 
-      {/* If subtotal already meets one of the lower thresholds: hint without governorate */}
       {!shippingAddress.governorate && subtotal > 0 && (
         <div className="card" style={{
           background: 'linear-gradient(135deg, #fce4ec, #f8bbd0)',
@@ -243,61 +364,71 @@ const Cart = () => {
         </div>
       )}
 
-      {/* ========== CART CONTENT ========== */}
       <div style={{display: 'grid', gridTemplateColumns: '1fr', gap: '20px'}} className="cart-grid">
         <div>
-          {cart.map(item => (
-            <div key={item.cartKey || item._id} className="cart-item">
-              <div className="cart-item-image">
-                {item.images && item.images[0] ? (
-                  <img src={item.images[0].url} alt={item.name} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
-                ) : (
-                  <div style={{width: '100%', height: '100%', background: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>{t('noImage')}</div>
-                )}
-              </div>
-              <div className="cart-item-info">
-                <h3>{item.name} {item.appliedOffer && <span style={{background: '#ef4444', color: 'white', fontSize: '11px', padding: '2px 8px', borderRadius: '6px', fontWeight: '600'}}>🔥 عرض خاص</span>}</h3>
-                {item.selectedSize && (
-                  <p style={{color: '#666', fontSize: '14px', margin: '4px 0'}}>
-                    <span style={{fontWeight: '600'}}>الحجم:</span> {item.selectedSize}
-                  </p>
-                )}
-                  <p className="product-price">
-                  {item.appliedOffer ? (
-                    <span style={{color: '#ef4444', fontWeight: '700'}}>سعر العرض: {formatCurrency(item.price)}</span>
-                  ) : item.discountPercent ? (
-                    <>
-                      <span style={{textDecoration: 'line-through', color: '#999', marginRight: '6px', marginLeft: '6px', fontSize: '14px'}}>{formatCurrency(item.originalPrice || item.price)}</span>
-                      <span style={{color: '#e74c3c', fontWeight: 'bold'}}>{formatCurrency(item.price)}</span>
-                    </>
-                  ) : (
-                    formatCurrency(item.price)
-                  )}
-                </p>
-              </div>
-              <div className="cart-item-actions">
-                <div className="quantity-control">
-                  <button onClick={() => updateQuantity(item.cartKey, item.quantity - 1)} className="btn-secondary">-</button>
-                  <span>{item.quantity}</span>
-                  <button onClick={() => updateQuantity(item.cartKey, item.quantity + 1)} className="btn-secondary">+</button>
+          {/* Filter out offer get-items — they render inside their parent's OfferSection instead */}
+          {cart.filter(item => !item.offerGetItem).map(item => {
+            const offer = getOfferForItem(item);
+            return (
+              <div key={item.cartKey || item._id} className="cart-item" style={{flexDirection: 'column'}}>
+                <div style={{display: 'flex', gap: '24px', width: '100%', alignItems: 'center'}}>
+                  <div className="cart-item-image">
+                    {item.images && item.images[0] ? (
+                      <img src={item.images[0].url} alt={item.name} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+                    ) : (
+                      <div style={{width: '100%', height: '100%', background: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>{t('noImage')}</div>
+                    )}
+                  </div>
+                  <div className="cart-item-info">
+                    <h3>{item.name}</h3>
+                    {item.selectedSize && (
+                      <p style={{color: '#666', fontSize: '14px', margin: '4px 0'}}>
+                        <span style={{fontWeight: '600'}}>الحجم:</span> {item.selectedSize}
+                      </p>
+                    )}
+                    <p className="product-price">
+                      {item.discountPercent ? (
+                        <>
+                          <span style={{textDecoration: 'line-through', color: '#999', marginRight: '6px', marginLeft: '6px', fontSize: '14px'}}>{formatCurrency(item.originalPrice || item.price)}</span>
+                          <span style={{color: '#e74c3c', fontWeight: 'bold'}}>{formatCurrency(item.price)}</span>
+                        </>
+                      ) : (
+                        formatCurrency(item.price)
+                      )}
+                    </p>
+                  </div>
+                  <div className="cart-item-actions">
+                    <div className="quantity-control">
+                      <button onClick={() => updateQuantity(item.cartKey, item.quantity - 1)} className="btn-secondary">-</button>
+                      <span>{item.quantity}</span>
+                      <button onClick={() => updateQuantity(item.cartKey, item.quantity + 1)} className="btn-secondary">+</button>
+                    </div>
+                    <button onClick={() => removeFromCart(item.cartKey)} className="btn-danger">{t('remove')}</button>
+                  </div>
                 </div>
-                <button onClick={() => removeFromCart(item.cartKey)} className="btn-danger">{t('remove')}</button>
+                <OfferSection
+                  item={item}
+                  offer={offer}
+                  products={allProducts}
+                  cart={cart}
+                  addToCart={addToCart}
+                  removeFromCart={removeFromCart}
+                  updateQuantity={updateQuantity}
+                  formatCurrency={formatCurrency}
+                />
               </div>
-            </div>
-          ))}
-          
+            );
+          })}
         </div>
-        
+
         <div className="card" style={{height: 'fit-content'}}>
           <h2>{t('cartSummary')}</h2>
           <div style={{marginTop: '20px'}}>
-            {/* Subtotal */}
             <div style={{display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #ddd'}}>
               <span>{t('subtotal')}:</span>
               <span>{formatCurrency(subtotal)}</span>
             </div>
 
-            {/* Delivery Fee */}
             <div style={{display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #ddd'}}>
               <span>رسوم التوصيل:</span>
               <span>
@@ -311,7 +442,6 @@ const Cart = () => {
               </span>
             </div>
 
-            {/* Total */}
             <div style={{display: 'flex', justifyContent: 'space-between', padding: '10px 0'}}>
               <span style={{fontSize: '20px', fontWeight: 'bold'}}>{t('total')}:</span>
               <span style={{fontSize: '20px', fontWeight: 'bold', color: '#28a745'}}>
@@ -322,7 +452,6 @@ const Cart = () => {
             <Link to="/products"><button className="btn-secondary" style={{width: '100%', marginTop: '10px'}}>{t('continueShopping')}</button></Link>
           </div>
 
-          {/* Customer Information Form */}
           <div style={{marginTop: '30px', paddingTop: '20px', borderTop: '2px solid #eee'}}>
             <h3 style={{marginBottom: '20px', color: '#333'}}>معلومات العميل</h3>
             <form onSubmit={handlePlaceOrder}>
@@ -369,7 +498,6 @@ const Cart = () => {
                   })}
                 </select>
 
-                {/* Delivery fee hint below the select */}
                 {shippingAddress.governorate && (
                   <p style={{
                     marginTop: '6px',
@@ -393,7 +521,7 @@ const Cart = () => {
                   value={shippingAddress.street}
                   onChange={(e) => setShippingAddress({...shippingAddress, street: e.target.value})}
                   required
-                  placeholder="اسم الشارع"
+                  placeholder="المنطقة"
                 />
               </div>
 
@@ -408,7 +536,6 @@ const Cart = () => {
                 />
               </div>
 
-              {/* Order total summary before submit */}
               {shippingAddress.governorate && (
                 <div style={{
                   background: '#f8f9fa',

@@ -16,11 +16,12 @@ const AdminOffers = () => {
     buyProductSize: '',
     getProductId: '',
     getPrice: '',
-    getProductSize: ''
+    getProductSize: '',
+    getLimit: ''
   });
 
   const resetForm = () => {
-    setFormData({ buyProductId: '', buyQuantity: '1', buyProductSize: '', getProductId: '', getPrice: '', getProductSize: '' });
+    setFormData({ buyProductId: '', buyQuantity: '1', buyProductSize: '', getProductId: '', getPrice: '', getProductSize: '', getLimit: '' });
     setEditingOffer(null);
     setShowForm(false);
   };
@@ -33,7 +34,8 @@ const AdminOffers = () => {
       buyProductSize: offer.buyProductSize || '',
       getProductId: offer.getProductId || '',
       getPrice: offer.getPrice ? offer.getPrice.toString() : '',
-      getProductSize: offer.getProductSize || ''
+      getProductSize: offer.getProductSize || '',
+      getLimit: offer.getLimit ? offer.getLimit.toString() : ''
     });
     setShowForm(true);
   };
@@ -205,7 +207,7 @@ const AdminOffers = () => {
                       color: '#166534',
                       fontWeight: '600'
                     }}>
-                       السعر الحالي: {selectedProduct.sizes && selectedProduct.sizes.length > 0 ? (
+                      💰 السعر الحالي: {selectedProduct.sizes && selectedProduct.sizes.length > 0 ? (
                         <span>يبدأ من {formatCurrency(Math.min(...selectedProduct.sizes.map(s => parseFloat(s.price))))}</span>
                       ) : (
                         <span>{formatCurrency(selectedProduct.price)}</span>
@@ -227,6 +229,16 @@ const AdminOffers = () => {
                   onChange={(e) => setFormData({...formData, getPrice: e.target.value})}
                   required
                   placeholder="مثال: 5.99"
+                />
+              </div>
+              <div className="form-group" style={{marginTop: '12px'}}>
+                <label>الحد الأقصى (0 = غير محدود)</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={formData.getLimit}
+                  onChange={(e) => setFormData({...formData, getLimit: e.target.value})}
+                  placeholder="0 = بدون حد أقصى"
                 />
               </div>
             </div>
@@ -263,7 +275,7 @@ const AdminOffers = () => {
                     🛒 اشتري <strong>{offer.buyQuantity}</strong> من "{getProductName(offer.buyProductId)}" {offer.buyProductSize ? <span style={{color: '#6366f1'}}>(حجم: {offer.buyProductSize})</span> : ''}
                   </div>
                   <div style={{fontSize: '15px', fontWeight: '600', color: '#065f46'}}>
-                    🎁 واحصل على "{getProductName(offer.getProductId)}" {offer.getProductSize ? <span style={{color: '#6366f1'}}>(حجم: {offer.getProductSize})</span> : ''} بسعر <strong>{formatCurrency(offer.getPrice)}</strong>
+                  🎁 واحصل على "{getProductName(offer.getProductId)}" {offer.getProductSize ? <span style={{color: '#6366f1'}}>(حجم: {offer.getProductSize})</span> : ''} بسعر <strong>{formatCurrency(offer.getPrice)}</strong> {offer.getLimit > 0 && <span style={{color: '#f97316', fontSize: '13px', fontWeight: '500'}}>(الحد الأقصى: {offer.getLimit})</span>}
                   </div>
                   <span style={{
                     display: 'inline-block',

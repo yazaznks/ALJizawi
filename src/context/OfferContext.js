@@ -54,6 +54,7 @@ export const OfferProvider = ({ children }) => {
         getProductId: offerData.getProductId,
         getPrice: parseFloat(offerData.getPrice) || 0,
         getProductSize: offerData.getProductSize || '',
+        getLimit: parseInt(offerData.getLimit) || 0,
         active: offerData.active !== false,
         createdAt: new Date().toISOString()
       };
@@ -76,6 +77,7 @@ export const OfferProvider = ({ children }) => {
         getProductId: offerData.getProductId,
         getPrice: parseFloat(offerData.getPrice) || 0,
         getProductSize: offerData.getProductSize || '',
+        getLimit: parseInt(offerData.getLimit) || 0,
         active: offerData.active !== false
       };
 
