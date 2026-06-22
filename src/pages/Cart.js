@@ -64,7 +64,7 @@ const OfferSection = ({ item, offer, products, cart, addToCart, removeFromCart, 
   return (
     <div style={{
       width: '100%',
-      marginTop: '12px',
+      marginTop: '0',
       padding: '12px 16px',
       borderRadius: '12px',
       background: offerMet ? '#f0fdf4' : '#fff7ed',
@@ -370,8 +370,8 @@ const Cart = () => {
           {cart.filter(item => !item.offerGetItem).map(item => {
             const offer = getOfferForItem(item);
             return (
-              <div key={item.cartKey || item._id} className="cart-item" style={{flexDirection: 'column'}}>
-                <div style={{display: 'flex', gap: '24px', width: '100%', alignItems: 'center'}}>
+              <div key={item.cartKey || item._id} className="cart-item">
+                <div className="cart-item-inner">
                   <div className="cart-item-image">
                     {item.images && item.images[0] ? (
                       <img src={item.images[0].url} alt={item.name} style={{width: '100%', height: '100%', objectFit: 'cover'}} />

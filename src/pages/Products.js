@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useProducts } from '../context/ProductContext';
 import { useBanner } from '../context/BannerContext';
@@ -453,6 +453,8 @@ const Products = () => {
   const { banners } = useBanner();
   const [currentBanner, setCurrentBanner] = useState(0);
   const loadMoreRef = useRef(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [priceSort, setPriceSort] = useState('none'); // 'none' | 'asc' | 'desc'
 
   const activeBanners = banners.filter(b => b.active);
 
@@ -460,16 +462,43 @@ const Products = () => {
   const { offers, loading: offersLoading } = useOffers();
   
   // Only active offers and matching existing products
-  const activeOffers = offers.filter(o => 
-    o.active && 
-    products.some(p => p._id === o.buyProductId) && 
+  const activeOffers = offers.filter(o =>
+    o.active &&
+    products.some(p => p._id === o.buyProductId) &&
     products.some(p => p._id === o.getProductId)
   );
-  
+
   // Split products: featured first, then regular
   const featured = products.filter(p => p.featured);
   const regular = products.filter(p => !p.featured);
   const sortedProducts = [...featured, ...regular];
+
+  // Helper: Get the effective single price for a product (for filtering/sorting)
+  const getProductPrice = (product) => {
+    if (product.sizes && product.sizes.length > 0) {
+      const prices = product.sizes.map(s => parseFloat(s.price));
+      return Math.min(...prices);
+    }
+    return product.price || 0;
+  };
+
+  // Search + price sort applied to all products (memoized to avoid re-render focus loss)
+  const filteredProducts = useMemo(() => {
+    let result = sortedProducts;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(p => p.name.toLowerCase().includes(q));
+    }
+    if (priceSort === 'asc') {
+      result = [...result].sort((a, b) => getProductPrice(a) - getProductPrice(b));
+    } else if (priceSort === 'desc') {
+      result = [...result].sort((a, b) => getProductPrice(b) - getProductPrice(a));
+    }
+    return result;
+  }, [sortedProducts, searchQuery, priceSort]);
+
+  const filteredFeatured = filteredProducts.filter(p => p.featured);
+  const filteredRegular = filteredProducts.filter(p => !p.featured);
 
   useEffect(() => {
     if (activeBanners.length <= 1) return;
@@ -509,6 +538,8 @@ const Products = () => {
       }
     };
   }, [hasMore, loading, loadProducts]);
+
+  // Filter JSX inlined to avoid focus loss during re-renders
 
   return (
     <div className="container">
@@ -586,6 +617,74 @@ const Products = () => {
         <p style={{textAlign: 'center', padding: '40px'}}>{t('noProducts') || 'لا توجد منتجات'}</p>
       ) : (
         <>
+          {/* Search & Sort - always visible */}
+          <div style={{
+            display: 'flex',
+            gap: '10px',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            marginTop: '20px',
+            marginBottom: '8px'
+          }}>
+              <input
+                type="text"
+                placeholder="🔍 بحث عن منتج..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{
+                  flex: '1',
+                  minWidth: '180px',
+                  padding: '10px 14px',
+                  borderRadius: '10px',
+                  border: '1px solid #d1d5db',
+                  fontSize: '15px',
+                  outline: 'none',
+                  background: 'white'
+                }}
+              />
+              <select
+                value={priceSort}
+                onChange={(e) => setPriceSort(e.target.value)}
+                style={{
+                  width: '150px',
+                  padding: '10px 14px',
+                  borderRadius: '10px',
+                  border: '1px solid #d1d5db',
+                  fontSize: '15px',
+                  outline: 'none',
+                  background: 'white',
+                  cursor: 'pointer'
+                }}
+              >
+                <option value="none">السعر: الافتراضي</option>
+                <option value="asc">السعر: من الأقل</option>
+                <option value="desc">السعر: من الأعلى</option>
+              </select>
+              {searchQuery && (
+                <button
+                  onClick={() => { setSearchQuery(''); }}
+                  style={{
+                    padding: '10px 14px',
+                    borderRadius: '10px',
+                    border: '1px solid #ef4444',
+                    background: 'white',
+                    color: '#ef4444',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  مسح البحث
+                </button>
+              )}
+              {(searchQuery || priceSort !== 'none') && (
+                <span style={{fontSize: '13px', color: '#666', whiteSpace: 'nowrap'}}>
+                  {filteredProducts.length} نتيجة
+                </span>
+              )}
+            </div>
+
           {/* Offers Section - اقوى العروض */}
           {activeOffers.length > 0 && (
             <>
@@ -708,9 +807,15 @@ const Products = () => {
                 </h2>
               </div>
               <div className="products-grid">
-                {featured.map(product => (
-                  <ProductCard key={product._id} product={product} />
-                ))}
+                {filteredFeatured.length > 0 ? (
+                  filteredFeatured.map(product => (
+                    <ProductCard key={product._id} product={product} />
+                  ))
+                ) : (
+                  <p style={{gridColumn: '1 / -1', textAlign: 'center', padding: '40px', color: '#888'}}>
+                    لا توجد منتجات مميزة تطابق البحث
+                  </p>
+                )}
               </div>
             </>
           )}
@@ -720,7 +825,7 @@ const Products = () => {
             display: 'flex',
             alignItems: 'center',
             gap: '12px',
-            marginTop: featured.length > 0 ? '48px' : '32px',
+            marginTop: (featured.length > 0 && filteredFeatured.length > 0) ? '48px' : '32px',
             marginBottom: '20px'
           }}>
             <span style={{
@@ -744,9 +849,15 @@ const Products = () => {
             </h2>
           </div>
           <div className="products-grid">
-            {regular.map(product => (
-              <ProductCard key={product._id} product={product} />
-            ))}
+            {filteredRegular.length > 0 ? (
+              filteredRegular.map(product => (
+                <ProductCard key={product._id} product={product} />
+              ))
+            ) : (
+              <p style={{gridColumn: '1 / -1', textAlign: 'center', padding: '40px', color: '#888'}}>
+                لا توجد منتجات تطابق البحث
+              </p>
+            )}
           </div>
 
           {/* Loading more indicator and infinite scroll sentinel */}
