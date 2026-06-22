@@ -27,9 +27,9 @@ function App() {
     <LanguageProvider>
       <AuthProvider>
         <ProductProvider>
-          <CartProvider>
             <BannerProvider>
             <OfferProvider>
+            <CartProvider>
             <Router>
             <div className="App">
               <Navbar />
@@ -84,9 +84,9 @@ function App() {
               </Routes>
             </div>
           </Router>
+          </CartProvider>
           </OfferProvider>
         </BannerProvider>
-        </CartProvider>
         </ProductProvider>
       </AuthProvider>
     </LanguageProvider>

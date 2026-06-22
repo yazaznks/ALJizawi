@@ -1,4 +1,6 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useRef, useCallback } from 'react';
+import { useOffers } from './OfferContext';
+import { useProducts } from './ProductContext';
 
 const CartContext = createContext();
 
@@ -25,43 +27,55 @@ export const CartProvider = ({ children }) => {
     return selectedSize ? `${product._id}_${selectedSize}` : product._id;
   };
 
-    const addToCart = (product, quantity = 1, selectedSize = null) => {
+  const addToCart = (product, quantity = 1, selectedSize = null) => {
     const itemKey = getItemKey(product, selectedSize);
 
     setCart(prevCart => {
       const existingItem = prevCart.find(item => item.cartKey === itemKey);
+      let updated;
 
       if (existingItem) {
-        return prevCart.map(item =>
+        updated = prevCart.map(item =>
           item.cartKey === itemKey
             ? { ...item, quantity: item.quantity + quantity }
             : item
         );
+      } else {
+        // Normalize price once
+        const discountPercent = product.discountPercent || 0;
+        const originalPrice = product.price;
+        const discountedPrice = discountPercent
+          ? originalPrice * (100 - discountPercent) / 100
+          : originalPrice;
+
+        updated = [...prevCart, {
+          ...product,
+          cartKey: itemKey,
+          selectedSize,
+          quantity,
+          price: discountedPrice,
+          originalPrice,
+          discountPercent
+        }];
       }
 
-      // Normalize price once: store the discounted unit price so the rest of the
-      // app can use it directly without reapplying discountPercent.
-      const discountPercent = product.discountPercent || 0;
-      const originalPrice = product.price;
-      const discountedPrice = discountPercent
-        ? originalPrice * (100 - discountPercent) / 100
-        : originalPrice;
-
-      return [...prevCart, {
-        ...product,
-        cartKey: itemKey,
-        selectedSize,
-        quantity,
-        price: discountedPrice,
-        originalPrice,
-        // Keep discountPercent for reference/display, but do NOT apply it again.
-        discountPercent
-      }];
+      // Re-evaluate offers with the updated cart
+      if (offers && products) {
+        return applyOffersInternal(updated, offers, products);
+      }
+      return updated;
     });
   };
 
   const removeFromCart = (cartKey) => {
-    setCart(prevCart => prevCart.filter(item => item.cartKey !== cartKey));
+    setCart(prevCart => {
+      const updated = prevCart.filter(item => item.cartKey !== cartKey);
+      // Re-evaluate offers with the updated cart
+      if (offers && products) {
+        return applyOffersInternal(updated, offers, products);
+      }
+      return updated;
+    });
   };
 
   const updateQuantity = (cartKey, quantity) => {
@@ -70,11 +84,16 @@ export const CartProvider = ({ children }) => {
       return;
     }
 
-    setCart(prevCart =>
-      prevCart.map(item =>
+    setCart(prevCart => {
+      const updated = prevCart.map(item =>
         item.cartKey === cartKey ? { ...item, quantity } : item
-      )
-    );
+      );
+      // Re-evaluate offers with the updated cart
+      if (offers && products) {
+        return applyOffersInternal(updated, offers, products);
+      }
+      return updated;
+    });
   };
 
   const clearCart = () => {
@@ -82,7 +101,6 @@ export const CartProvider = ({ children }) => {
     localStorage.removeItem('cart');
   };
 
-  // Price is already discounted at add-to-cart time; avoid double discounting.
   const getEffectivePrice = (item) => item.price;
 
   const getCartTotal = () => {
@@ -95,6 +113,81 @@ export const CartProvider = ({ children }) => {
     return cart.reduce((count, item) => count + item.quantity, 0);
   };
 
+  // Auto-apply offers: if cart contains enough of the buy product,
+  // automatically add the get product at the offer price (if not already there)
+  const { offers } = useOffers();
+  const { products } = useProducts();
+
+  // Pure function: apply offers to a given cart snapshot and return the new cart
+  const applyOffersInternal = (currentCart, offersList, allProducts) => {
+    if (!offersList || !allProducts) return currentCart;
+    const activeOffers = offersList.filter(o => o.active);
+    const updated = [...currentCart];
+
+    activeOffers.forEach(offer => {
+      const buyKey = offer.buyProductSize
+        ? `${offer.buyProductId}_${offer.buyProductSize}`
+        : offer.buyProductId;
+      const getKey = offer.getProductSize
+        ? `${offer.getProductId}_${offer.getProductSize}`
+        : offer.getProductId;
+
+      // Remove existing get item first (to handle updates/reprice)
+      const existingIdx = updated.findIndex(item => item.cartKey === getKey);
+      if (existingIdx !== -1) {
+        updated.splice(existingIdx, 1);
+      }
+
+      // Find buy item in cart
+      const buyItem = updated.find(item => item.cartKey === buyKey);
+      if (!buyItem) return;
+
+      // Check if quantity is enough
+      const buyQty = buyItem.quantity || 0;
+      const requiredQty = offer.buyQuantity || 1;
+      if (buyQty < requiredQty) return;
+
+      // Find the get product details
+      const getProduct = allProducts.find(p => p._id === offer.getProductId);
+      if (!getProduct) return;
+
+      // Use offer price
+      const offerPrice = parseFloat(offer.getPrice) || 0;
+      const getSize = offer.getProductSize || null;
+
+      updated.push({
+        ...getProduct,
+        cartKey: getKey,
+        selectedSize: getSize,
+        quantity: 1,
+        price: offerPrice,
+        originalPrice: getSize
+          ? (getProduct.sizes && getProduct.sizes.find(s => s.name === getSize))
+            ? parseFloat(getProduct.sizes.find(s => s.name === getSize).price)
+            : getProduct.price
+          : getProduct.price,
+        discountPercent: 0,
+        appliedOffer: true,
+        offerId: offer.id
+      });
+    });
+
+    return updated;
+  };
+
+  // Wrapper: reads current cart from state, applies offers, writes back
+  const applyOffers = useCallback((offersList, allProducts) => {
+    setCart(prevCart => applyOffersInternal(prevCart, offersList, allProducts));
+  }, []);
+
+  // Auto-apply offers whenever offers or products change
+  useEffect(() => {
+    if (offers && products && offers.length > 0 && products.length > 0) {
+      setCart(prevCart => applyOffersInternal(prevCart, offers, products));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [offers, products]);
+
   const value = {
     cart,
     addToCart,
@@ -102,7 +195,8 @@ export const CartProvider = ({ children }) => {
     updateQuantity,
     clearCart,
     getCartTotal,
-    getCartCount
+    getCartCount,
+    applyOffers
   };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

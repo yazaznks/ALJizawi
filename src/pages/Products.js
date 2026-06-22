@@ -587,7 +587,7 @@ const Products = () => {
       ) : (
         <>
           {/* Offers Section - اقوى العروض */}
-          {activeOffers.length > 0 && (
+          {/* {activeOffers.length > 0 && (
             <>
               <div style={{
                 display: 'flex',
@@ -597,7 +597,7 @@ const Products = () => {
                 marginBottom: '24px'
               }}>
                 <span style={{
-                  background: 'linear-gradient(135deg, #ef4444, #ec4899)',
+                 
                   color: 'white',
                   fontSize: '22px',
                   padding: '8px 14px',
@@ -703,7 +703,7 @@ const Products = () => {
                 })}
               </div>
             </>
-          )}
+          )} */}
 
           {/* Featured Products Section */}
           {featured.length > 0 && (

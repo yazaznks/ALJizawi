@@ -256,14 +256,16 @@ const Cart = () => {
                 )}
               </div>
               <div className="cart-item-info">
-                <h3>{item.name}</h3>
+                <h3>{item.name} {item.appliedOffer && <span style={{background: '#ef4444', color: 'white', fontSize: '11px', padding: '2px 8px', borderRadius: '6px', fontWeight: '600'}}>🔥 عرض خاص</span>}</h3>
                 {item.selectedSize && (
                   <p style={{color: '#666', fontSize: '14px', margin: '4px 0'}}>
                     <span style={{fontWeight: '600'}}>الحجم:</span> {item.selectedSize}
                   </p>
                 )}
-                <p className="product-price">
-                  {item.discountPercent ? (
+                  <p className="product-price">
+                  {item.appliedOffer ? (
+                    <span style={{color: '#ef4444', fontWeight: '700'}}>سعر العرض: {formatCurrency(item.price)}</span>
+                  ) : item.discountPercent ? (
                     <>
                       <span style={{textDecoration: 'line-through', color: '#999', marginRight: '6px', marginLeft: '6px', fontSize: '14px'}}>{formatCurrency(item.originalPrice || item.price)}</span>
                       <span style={{color: '#e74c3c', fontWeight: 'bold'}}>{formatCurrency(item.price)}</span>
