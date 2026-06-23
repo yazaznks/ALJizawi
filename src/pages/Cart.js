@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -73,7 +73,7 @@ const OfferSection = ({ item, offer, products, cart, addToCart, removeFromCart, 
     }}>
       {!offerMet ? (
         <div style={{fontSize: '14px', fontWeight: '600', color: '#9a3412', textAlign: 'center'}}>
-          🎁 أضف {missingQty} من "{item.name}" واحصل على "{getProduct?.name || ''}" بسعر {formatCurrency(offer.getPrice)}
+          🎁 أضف {missingQty} من "{item.name}" واحصل على "{getProduct?.name || ''}" {parseFloat(offer?.getPrice) === 0 ? 'مجاناً' : `بسعر ${formatCurrency(offer.getPrice)}`}
         </div>
       ) : (
         <>
@@ -105,26 +105,34 @@ const OfferSection = ({ item, offer, products, cart, addToCart, removeFromCart, 
                 {getProduct?.name} {offer.getProductSize && <span style={{color: '#6366f1'}}>({offer.getProductSize})</span>}
               </div>
               <div style={{fontWeight: '700', fontSize: '16px', color: '#ef4444'}}>
-                {formatCurrency(offer.getPrice)}
+                {parseFloat(offer.getPrice) === 0 ? 'مجاناً' : formatCurrency(offer.getPrice)}
               </div>
             </div>
-            <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}>
-              <button onClick={handleMinus} style={{
-                width: '32px', height: '32px', borderRadius: '8px',
-                border: '1px solid #ef4444', background: '#fef2f2',
-                color: '#ef4444', fontSize: '18px', fontWeight: '700',
-                cursor: 'pointer', display: 'flex', alignItems: 'center',
-                justifyContent: 'center', padding: 0, lineHeight: 1
-              }}>−</button>
-              <span style={{minWidth: '20px', textAlign: 'center', fontWeight: '700', fontSize: '15px'}}>{getQty}</span>
-              <button onClick={handlePlus} style={{
-                width: '32px', height: '32px', borderRadius: '8px',
-                border: '1px solid #22c55e', background: '#f0fdf4',
-                color: '#22c55e', fontSize: '18px', fontWeight: '700',
-                cursor: 'pointer', display: 'flex', alignItems: 'center',
-                justifyContent: 'center', padding: 0, lineHeight: 1
-              }}>+</button>
-            </div>
+            {parseFloat(offer.getPrice) === 0 ? (
+              <div style={{
+                padding: '6px 14px', borderRadius: '8px',
+                background: '#f0fdf4', border: '1px solid #86efac',
+                color: '#166534', fontWeight: '700', fontSize: '14px'
+              }}>مجاناً</div>
+            ) : (
+              <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}>
+                <button onClick={handleMinus} style={{
+                  width: '32px', height: '32px', borderRadius: '8px',
+                  border: '1px solid #ef4444', background: '#fef2f2',
+                  color: '#ef4444', fontSize: '18px', fontWeight: '700',
+                  cursor: 'pointer', display: 'flex', alignItems: 'center',
+                  justifyContent: 'center', padding: 0, lineHeight: 1
+                }}>−</button>
+                <span style={{minWidth: '20px', textAlign: 'center', fontWeight: '700', fontSize: '15px'}}>{getQty}</span>
+                <button onClick={handlePlus} style={{
+                  width: '32px', height: '32px', borderRadius: '8px',
+                  border: '1px solid #22c55e', background: '#f0fdf4',
+                  color: '#22c55e', fontSize: '18px', fontWeight: '700',
+                  cursor: 'pointer', display: 'flex', alignItems: 'center',
+                  justifyContent: 'center', padding: 0, lineHeight: 1
+                }}>+</button>
+              </div>
+            )}
           </div>
         </>
       )}
@@ -138,7 +146,8 @@ const Cart = () => {
   const { t, formatCurrency } = useLanguage();
   const [customerInfo, setCustomerInfo] = useState({
     name: '',
-    phone: ''
+    phone: '',
+    phone2: ''
   });
   const [shippingAddress, setShippingAddress] = useState({
     governorate: '',
@@ -174,6 +183,39 @@ const Cart = () => {
     });
   };
 
+  // Auto-add free offer get-items when buy threshold is met (runs after cart commits)
+  useEffect(() => {
+    cart.forEach(item => {
+      if (item.offerGetItem) return; // skip get-items themselves
+      const offer = getOfferForItem(item);
+      if (!offer || parseFloat(offer.getPrice) !== 0) return;
+
+      const requiredQty = offer.buyQuantity || 1;
+      if (item.quantity < requiredQty) return;
+
+      const getItemKey = offer.getProductSize
+        ? `${offer.getProductId}_${offer.getProductSize}`
+        : offer.getProductId;
+
+      // Already in cart? skip
+      if (cart.some(c => c.cartKey === getItemKey)) return;
+
+      const getProduct = allProducts.find(p => p._id === offer.getProductId);
+      if (getProduct) {
+        addToCart({
+          ...getProduct,
+          _id: offer.getProductId,
+          price: 0,
+          discountPercent: 0,
+          offerGetItem: true,
+          linkedBuyKey: item.cartKey,
+          offerBuyQuantity: requiredQty
+        }, 1, offer.getProductSize || null);
+      }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cart]);
+
   const handlePlaceOrder = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -189,7 +231,8 @@ const Cart = () => {
         })),
         customerInfo: {
           name: customerInfo.name,
-          phone: customerInfo.phone
+          phone: customerInfo.phone,
+          phone2: customerInfo.phone2 || ''
         },
         shippingAddress: {
           governorate: shippingAddress.governorate,
@@ -212,7 +255,7 @@ const Cart = () => {
       await addDoc(collection(db, 'ecommerce_orders'), orderData);
 
       clearCart();
-      setCustomerInfo({ name: '', phone: '' });
+      setCustomerInfo({ name: '', phone: '', phone2: '' });
       setShippingAddress({ governorate: '', street: '', building: '' });
 
       const totalItems = getCartCount();
@@ -469,10 +512,25 @@ const Cart = () => {
               <div className="form-group">
                 <label>رقم الهاتف *</label>
                 <input
-                  type="tel"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]{10}"
                   value={customerInfo.phone}
-                  onChange={(e) => setCustomerInfo({...customerInfo, phone: e.target.value})}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                    setCustomerInfo({...customerInfo, phone: val});
+                  }}
                   required
+                  placeholder="مثال: 0798123456"
+                  style={{direction: 'ltr', textAlign: 'left'}}
+                />
+              </div>
+              <div className="form-group">
+                <label>رقم هاتف اضافي (اختياري)</label>
+                <input
+                  type="tel"
+                  value={customerInfo.phone2}
+                  onChange={(e) => setCustomerInfo({...customerInfo, phone2: e.target.value})}
                   placeholder="مثال: ******0798"
                 />
               </div>

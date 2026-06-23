@@ -84,6 +84,7 @@ const AdminOffers = () => {
         <Link to="/admin/orders">{t('orders')}</Link>
         <Link to="/admin/ads">{t('ads')}</Link>
         <Link to="/admin/offers" style={{ background: 'rgba(99, 102, 241, 0.15)', fontWeight: '700' }}>العروض</Link>
+        <Link to="/admin/manual-sales">مبيعات يدوية</Link>
       </div>
 
       <div style={{marginBottom: '20px'}}>

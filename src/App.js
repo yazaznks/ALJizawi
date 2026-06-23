@@ -6,6 +6,7 @@ import { CartProvider } from './context/CartContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { BannerProvider } from './context/BannerContext';
 import { OfferProvider } from './context/OfferContext';
+import { SaleProvider } from './context/SaleContext';
 import Navbar from './components/Navbar';
 import CartStickyBar from './components/CartStickyBar';
 import Products from './pages/Products';
@@ -17,8 +18,9 @@ import AdminDashboard from './pages/AdminDashboard';
 import AdminProducts from './pages/AdminProducts';
 import AdminOrders from './pages/AdminOrders';
 import AdminOffers from './pages/AdminOffers';
-
 import AdminAds from './pages/AdminAds';
+import AdminManualSales from './pages/AdminManualSales';
+import AdminSalesHistory from './pages/AdminSalesHistory';
 import PrivateRoute from './components/PrivateRoute';
 import './App.css';
 
@@ -29,6 +31,7 @@ function App() {
         <ProductProvider>
             <BannerProvider>
             <OfferProvider>
+            <SaleProvider>
             <CartProvider>
             <Router>
             <div className="App">
@@ -81,10 +84,27 @@ function App() {
                   </PrivateRoute>
                 }
               />
+              <Route
+                path="/admin/manual-sales"
+                element={
+                  <PrivateRoute adminOnly={true}>
+                    <AdminManualSales />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/admin/sales-history"
+                element={
+                  <PrivateRoute adminOnly={true}>
+                    <AdminSalesHistory />
+                  </PrivateRoute>
+                }
+              />
               </Routes>
             </div>
           </Router>
           </CartProvider>
+          </SaleProvider>
           </OfferProvider>
         </BannerProvider>
         </ProductProvider>

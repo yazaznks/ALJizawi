@@ -170,15 +170,22 @@ const AdminOrders = () => {
   // Format a single order for WhatsApp message
   const formatOrderForWhatsApp = (order, index) => {
     const itemsList = order.items?.map(item => formatItemForWhatsApp(item)).join('\n');
+    const subtotal = parseFloat(order.pricing?.subtotal || 0);
+    const shippingFee = parseFloat(order.pricing?.shippingFee || 0);
     const totalAmount = parseFloat(order.pricing?.total || 0);
+    const formattedSubtotal = subtotal % 1 === 0 ? subtotal.toFixed(0) : subtotal.toFixed(1);
+    const formattedShipping = shippingFee % 1 === 0 ? shippingFee.toFixed(0) : shippingFee.toFixed(1);
     const formattedTotal = totalAmount % 1 === 0 ? totalAmount.toFixed(0) : totalAmount.toFixed(1);
+    const feeLabel = shippingFee === 0 ? 'مجاناً' : `${formattedShipping} د.أ`;
 
     return (
       `*طلب ${index + 1}: #${order.orderNumber}*\n` +
       `العميل: ${order.customerInfo?.name || 'غير محدد'}\n` +
-    
+      `رقم الهاتف: ${order.customerInfo?.phone || 'غير محدد'}\n` +
       `العنوان: ${order.shippingAddress?.governorate || ''}, ${order.shippingAddress?.street || ''}, ${order.shippingAddress?.building || ''}\n` +
       `المنتجات:\n${itemsList || '  لا توجد منتجات'}\n` +
+      `المجموع الفرعي: ${formattedSubtotal} د.أ\n` +
+      `رسوم التوصيل: ${feeLabel}\n` +
       `الإجمالي: ${formattedTotal} د.أ\n` +
       `التاريخ: ${order.createdAt ? new Date(order.createdAt).toLocaleDateString() : '-'}\n`
     );
@@ -236,6 +243,8 @@ const AdminOrders = () => {
         <Link to="/admin/orders">{t('orders')}</Link>
         <Link to="/admin/ads">{t('ads')}</Link>
         <Link to="/admin/offers">العروض</Link>
+        <Link to="/admin/manual-sales">مبيعات يدوية</Link>
+
       </div>
 
       <div className="card">
@@ -511,7 +520,6 @@ const AdminOrders = () => {
               <table style={{width: '100%', borderCollapse: 'collapse'}}>
                 <tbody>
                   <tr><td style={{padding: '6px 10px', fontWeight: '600', width: '120px'}}>الاسم:</td><td style={{padding: '6px 10px'}}>{selectedOrder.customerInfo?.name}</td></tr>
-                  <tr><td style={{padding: '6px 10px', fontWeight: '600'}}>رقم الهاتف:</td><td style={{padding: '6px 10px'}}>{selectedOrder.customerInfo?.phone}</td></tr>
                   {selectedOrder.driverPhone && (
                     <tr><td style={{padding: '6px 10px', fontWeight: '600'}}>رقم السائق:</td><td style={{padding: '6px 10px', direction: 'ltr', textAlign: 'left'}}>{normalizePhoneDisplay(selectedOrder.driverPhone)}</td></tr>
                   )}

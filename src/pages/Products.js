@@ -471,7 +471,23 @@ const Products = () => {
   // Split products: featured first, then regular
   const featured = products.filter(p => p.featured);
   const regular = products.filter(p => !p.featured);
-  const sortedProducts = [...featured, ...regular];
+  const regularShuffled = useMemo(() => {
+    const arr = [...regular];
+    if (arr.length === 0) return arr;
+    const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
+    let seed = parseInt(dateStr, 10);
+    const rand = () => {
+      seed = (seed * 9301 + 49297) % 233280;
+      return seed / 233280;
+    };
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(rand() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }, [regular]);
+
+  const sortedProducts = [...featured, ...regularShuffled];
 
   // Helper: Get the effective single price for a product (for filtering/sorting)
   const getProductPrice = (product) => {
@@ -500,13 +516,16 @@ const Products = () => {
   const filteredFeatured = filteredProducts.filter(p => p.featured);
   const filteredRegular = filteredProducts.filter(p => !p.featured);
 
+  const [videoPlaying, setVideoPlaying] = useState(false);
+
   useEffect(() => {
     if (activeBanners.length <= 1) return;
+    if (videoPlaying) return; // pause auto-advance while video is playing
     const interval = setInterval(() => {
       setCurrentBanner(prev => (prev + 1) % activeBanners.length);
     }, 5000);
     return () => clearInterval(interval);
-  }, [activeBanners.length]);
+  }, [activeBanners.length, videoPlaying]);
 
   const prevBanner = () => {
     setCurrentBanner(prev => (prev - 1 + activeBanners.length) % activeBanners.length);
@@ -543,7 +562,7 @@ const Products = () => {
 
   return (
     <div className="container">
-      {activeBanners.length > 0 && (
+      {activeBanners. length > 0 && (
         <div className="banner-carousel" style={{position: 'relative', marginBottom: '20px'}}>
           <div className="banner-slide">
             {(() => {
@@ -555,7 +574,14 @@ const Products = () => {
                       className="banner-video"
                       src={banner.videoData}
                       controls
+                      autoPlay
                       style={{width: '100%', height: '100%', objectFit: 'contain', background: '#000'}}
+                      onPlay={() => setVideoPlaying(true)}
+                      onEnded={() => {
+                        setVideoPlaying(false);
+                        setCurrentBanner(prev => (prev + 1) % activeBanners.length);
+                      }}
+                      onPause={() => setVideoPlaying(false)}
                     />
                   );
                 }
@@ -762,7 +788,7 @@ const Products = () => {
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap'
                           }}>
-                             واحصل على "{getProduct.name}" {offer.getProductSize ? <span style={{fontSize: '12px', fontWeight: '600', color: '#6366f1'}}>(حجم: {offer.getProductSize})</span> : ''} بسعر <span style={{fontSize: '16px'}}>{formatCurrency(offer.getPrice)}</span>
+                              واحصل على "{getProduct.name}" {offer.getProductSize ? <span style={{fontSize: '12px', fontWeight: '600', color: '#6366f1'}}>(حجم: {offer.getProductSize})</span> : ''} {parseFloat(offer.getPrice) === 0 ? 'مجاناً' : <>بسعر <span style={{fontSize: '16px'}}>{formatCurrency(offer.getPrice)}</span></>}
                           </div>
                         </div>
                         <div className="offer-card-badge">

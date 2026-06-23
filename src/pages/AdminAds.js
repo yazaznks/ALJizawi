@@ -30,22 +30,22 @@ const AdminAds = () => {
       bannerData.videoFile = bannerVideoFile;
     }
     const result = await addBanner(bannerData);
-    if (result.success) {
-      setMessage('Banner added successfully!');
+      if (result.success) {
+        setMessage('تم إضافة البانر بنجاح!');
       setBannerType('text');
       setBannerContent('');
       setBannerImageFile(null);
       setBannerVideoFile(null);
       if (videoFileInputRef.current) videoFileInputRef.current.value = '';
       if (imageFileInputRef.current) imageFileInputRef.current.value = '';
-    } else {
-      setMessage('Error adding banner: ' + result.message);
+      } else {
+        setMessage('خطأ في إضافة البانر: ' + result.message);
     }
     setAdding(false);
   };
 
   const handleDeleteBanner = async (id) => {
-    if (window.confirm('Delete this banner?')) {
+    if (window.confirm('هل أنت متأكد من حذف هذا البانر؟')) {
       await deleteBanner(id);
     }
   };
@@ -59,33 +59,35 @@ const AdminAds = () => {
         <Link to="/admin/orders">{t('orders')}</Link>
         <Link to="/admin/ads">{t('ads')}</Link>
         <Link to="/admin/offers">العروض</Link>
+        <Link to="/admin/manual-sales">مبيعات يدوية</Link>
+      
       </div>
 
       <div className="card" style={{marginTop: '30px'}}>
-        <h2>Add New Banner</h2>
-        <p>Add banners that appear at the top of the products page in a sliding carousel.</p>
+        <h2>إضافة بانر جديد</h2>
+        <p>أضف إعلانات تظهر في أعلى صفحة المنتجات في معرض منزلق.</p>
 
         <form onSubmit={handleAddBanner}>
           <div className="form-group">
-            <label>Banner Type</label>
+            <label>نوع البانر</label>
             <select value={bannerType} onChange={(e) => { setBannerType(e.target.value); setBannerImageFile(null); }}>
-              <option value="text">Text</option>
-              <option value="video">Video (Embed URL)</option>
-              <option value="image">Image</option>
+              <option value="text">نص</option>
+              <option value="video">فيديو (رابط التضمين)</option>
+              <option value="image">صورة</option>
             </select>
           </div>
 
           <div className="form-group">
             {bannerType === 'video' ? (
               <>
-                <label>Video Embed URL (optional, e.g., YouTube embed link)</label>
+                <label>رابط تضمين الفيديو (اختياري، مثل رابط يوتيوب)</label>
                 <input
                   type="text"
                   value={bannerContent}
                   onChange={(e) => setBannerContent(e.target.value)}
                   placeholder="https://www.youtube.com/embed/VIDEO_ID"
                 />
-                <label style={{marginTop: '16px', display: 'block'}}>Or Upload Your Own Video File</label>
+                <label style={{marginTop: '16px', display: 'block'}}>أو ارفع ملف فيديو خاص بك</label>
                 <input
                   ref={videoFileInputRef}
                   type="file"
@@ -96,12 +98,12 @@ const AdminAds = () => {
                   }}
                 />
                 {bannerVideoFile && (
-                  <p style={{marginTop: '8px', fontSize: '14px', color: '#666'}}>Selected: {bannerVideoFile.name}</p>
+                  <p style={{marginTop: '8px', fontSize: '14px', color: '#666'}}>تم اختيار: {bannerVideoFile.name}</p>
                 )}
               </>
             ) : bannerType === 'image' ? (
-              <>
-                <label>Upload Banner Image</label>
+               <>
+                <label>ارفع صورة البانر</label>
                 <input
                   ref={imageFileInputRef}
                   type="file"
@@ -113,17 +115,17 @@ const AdminAds = () => {
                   }}
                 />
                 {bannerImageFile && (
-                  <p style={{marginTop: '8px', fontSize: '14px', color: '#666'}}>Selected: {bannerImageFile.name}</p>
+                  <p style={{marginTop: '8px', fontSize: '14px', color: '#666'}}>تم اختيار: {bannerImageFile.name}</p>
                 )}
               </>
             ) : (
               <>
-                <label>Banner Text</label>
+                <label>نص البانر</label>
                 <textarea
                   value={bannerContent}
                   onChange={(e) => setBannerContent(e.target.value)}
                   rows="3"
-                  placeholder="Enter your banner text here..."
+                  placeholder="أدخل نص الإعلان هنا..."
                 />
               </>
             )}
@@ -134,23 +136,23 @@ const AdminAds = () => {
           )}
 
           <button type="submit" className="btn-primary" disabled={adding}>
-            {adding ? 'Adding...' : 'Add Banner'}
+            {adding ? 'جاري الإضافة...' : 'إضافة بانر'}
           </button>
         </form>
 
         <div style={{marginTop: '30px'}}>
-          <h3>Current Banners ({banners.filter(b => b.active).length} active)</h3>
+          <h3>البانرات الحالية ({banners.filter(b => b.active).length} نشط)</h3>
           {banners.length === 0 ? (
-            <p style={{color: '#666'}}>No banners yet. Add one above.</p>
+            <p style={{color: '#666'}}>لا توجد بانرات بعد. أضف واحداً أعلاه.</p>
           ) : (
             <div style={{display: 'flex', flexDirection: 'column', gap: '15px', marginTop: '15px'}}>
               {banners.map(banner => (
                 <div key={banner.id} style={{padding: '15px', border: '1px solid #ddd', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
                   <div style={{flex: 1}}>
-                    <strong>{banner.type}</strong>
+                    <strong>{banner.type === 'text' ? 'نص' : banner.type === 'video' ? 'فيديو' : 'صورة'}</strong>
                     {banner.type === 'video' && (
                       <span style={{marginLeft: '10px', color: '#666'}}>
-                        {banner.videoData ? '[Uploaded Video]' : banner.content}
+                        {banner.videoData ? '[فيديو مرفوع]' : banner.content}
                       </span>
                     )}
                     {banner.type === 'text' && <span style={{marginLeft: '10px', color: '#666'}}>{banner.content}</span>}
@@ -158,10 +160,10 @@ const AdminAds = () => {
                       <img src={banner.imageData} alt="Banner" style={{maxWidth: '100px', maxHeight: '50px', objectFit: 'cover', borderRadius: '4px', marginLeft: '10px'}} />
                     )}
                     <span style={{marginLeft: '10px', padding: '3px 8px', borderRadius: '4px', fontSize: '12px', background: banner.active ? '#28a745' : '#dc3545', color: 'white'}}>
-                      {banner.active ? 'Active' : 'Inactive'}
+                      {banner.active ? 'نشط' : 'غير نشط'}
                     </span>
                   </div>
-                  <button onClick={() => handleDeleteBanner(banner.id)} className="btn-danger" style={{padding: '5px 10px'}}>Delete</button>
+                  <button onClick={() => handleDeleteBanner(banner.id)} className="btn-danger" style={{padding: '5px 10px'}}>حذف</button>
                 </div>
               ))}
             </div>

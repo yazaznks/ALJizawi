@@ -1,11 +1,8 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { useLanguage } from '../context/LanguageContext';
+import { Navigate } from 'react-router-dom';
 
 const Admin = () => {
-  const { t } = useLanguage();
-
-  return null;
+  return <Navigate to="/admin" replace />;
 };
 
 export default Admin;

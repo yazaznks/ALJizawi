@@ -18,26 +18,6 @@ export const CartProvider = ({ children }) => {
 
   useEffect(() => {
     localStorage.setItem('cart', JSON.stringify(cart));
-    // Auto-clean stale offer items whenever cart changes
-    setCart(prevCart => {
-      const hasStale = prevCart.some(item => {
-        if (!item.linkedBuyKey) return false;
-        const buyItem = prevCart.find(b => b.cartKey === item.linkedBuyKey);
-        if (!buyItem) return true;
-        const requiredQty = item.offerBuyQuantity || 1;
-        if (buyItem.quantity < requiredQty) return true;
-        return false;
-      });
-      if (!hasStale) return prevCart;
-      return prevCart.filter(item => {
-        if (!item.linkedBuyKey) return true;
-        const buyItem = prevCart.find(b => b.cartKey === item.linkedBuyKey);
-        if (!buyItem) return false;
-        const requiredQty = item.offerBuyQuantity || 1;
-        if (buyItem.quantity < requiredQty) return false;
-        return true;
-      });
-    });
   }, [cart]);
 
   // Generate unique item key based on product ID and selected size (if any)

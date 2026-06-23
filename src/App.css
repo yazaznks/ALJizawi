@@ -441,24 +441,28 @@
 
 /* Admin Styles */
 .admin-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
   background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(236, 72, 153, 0.1) 100%);
-  padding: 20px 24px;
-  margin-bottom: 32px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
   border-radius: 16px;
   border: 2px solid rgba(99, 102, 241, 0.2);
-  /* backdrop-filter: blur(10px); */
+  font-family: 'Tajawal', 'Inter', sans-serif;
 }
 
 .admin-nav a {
-  margin-right: 28px;
+  margin: 0;
   color: #000000 !important;
   text-decoration: none;
   font-weight: 600;
-  font-size: 16px;
+  font-size: 18px;
   transition: all 0.3s ease;
-  padding: 8px 16px;
+  padding: 6px 12px;
   border-radius: 8px;
   text-shadow: 0 1px 2px rgba(99, 102, 241, 0.2);
+  white-space: nowrap;
 }
 
 .admin-nav a:hover {
