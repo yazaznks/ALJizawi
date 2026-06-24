@@ -20,7 +20,7 @@ import AdminOrders from './pages/AdminOrders';
 import AdminOffers from './pages/AdminOffers';
 import AdminAds from './pages/AdminAds';
 import AdminManualSales from './pages/AdminManualSales';
-import AdminSalesHistory from './pages/AdminSalesHistory';
+
 import PrivateRoute from './components/PrivateRoute';
 import './App.css';
 
@@ -84,7 +84,7 @@ function App() {
                   </PrivateRoute>
                 }
               />
-              <Route
+               <Route
                 path="/admin/manual-sales"
                 element={
                   <PrivateRoute adminOnly={true}>
@@ -92,14 +92,7 @@ function App() {
                   </PrivateRoute>
                 }
               />
-              <Route
-                path="/admin/sales-history"
-                element={
-                  <PrivateRoute adminOnly={true}>
-                    <AdminSalesHistory />
-                  </PrivateRoute>
-                }
-              />
+
               </Routes>
             </div>
           </Router>

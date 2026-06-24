@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useProducts } from '../context/ProductContext';
 import { useOffers } from '../context/OfferContext';
 import { useLanguage } from '../context/LanguageContext';
+import AdminNav from '../components/AdminNav';
 
 const AdminOffers = () => {
   const { products } = useProducts();
@@ -78,14 +79,7 @@ const AdminOffers = () => {
   return (
     <div className="container">
       <h1>العروض</h1>
-      <div className="admin-nav">
-        <Link to="/admin">{t('dashboard')}</Link>
-        <Link to="/admin/products">{t('products')}</Link>
-        <Link to="/admin/orders">{t('orders')}</Link>
-        <Link to="/admin/ads">{t('ads')}</Link>
-        <Link to="/admin/offers" style={{ background: 'rgba(99, 102, 241, 0.15)', fontWeight: '700' }}>العروض</Link>
-        <Link to="/admin/manual-sales">مبيعات يدوية</Link>
-      </div>
+      <AdminNav />
 
       <div style={{marginBottom: '20px'}}>
         <button

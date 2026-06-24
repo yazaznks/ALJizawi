@@ -133,6 +133,7 @@ export const ProductProvider = ({ children }) => {
         weight: productData.weight ? parseFloat(productData.weight) : 0,
         images: images,
         sizes: productData.sizes || [],
+        imageSizes: productData.imageSizes || {},
         active: true,
         createdAt: new Date().toISOString()
       };
@@ -179,7 +180,8 @@ export const ProductProvider = ({ children }) => {
         featured: productData.featured === 'true' || productData.featured === true,
         weight: productData.weight ? parseFloat(productData.weight) : 0,
         images: [...(keptImages || existingProduct.images), ...newImages], // Keep selected + append new
-        sizes: productData.sizes || []
+        sizes: productData.sizes || [],
+        imageSizes: productData.imageSizes || {}
       };
 
       // Update in Firebase

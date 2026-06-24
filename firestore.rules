@@ -44,5 +44,21 @@ service cloud.firestore {
       allow update: if request.auth != null;
       allow delete: if request.auth != null;
     }
+
+    // Manual Sales collection - read/write/update/delete for authenticated users only
+    match /manual_sales/{saleId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null;
+      allow delete: if request.auth != null;
+    }
+
+    // Drivers collection - read/write for authenticated users only
+    match /drivers/{driverId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null;
+      allow delete: if request.auth != null;
+    }
   }
 }

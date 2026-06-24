@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import AdminNav from '../components/AdminNav';
 import { useProducts } from '../context/ProductContext';
 import { useSales } from '../context/SaleContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -16,7 +17,6 @@ const AdminManualSales = () => {
   const { products } = useProducts();
   const { createSale, updateSale } = useSales();
   const [selectedProductId, setSelectedProductId] = useState('');
-  const [selectedSizeName, setSelectedSizeName] = useState('');
   const [items, setItems] = useState([]);
   const [discount, setDiscount] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState('cash');
@@ -30,7 +30,6 @@ const AdminManualSales = () => {
     .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ar'));
 
   const selectedProduct = activeProducts.find(p => p._id === selectedProductId);
-  const selectedProductSizes = selectedProduct?.sizes || [];
 
   const getProductPrice = (product) => {
     if (product.sizes && product.sizes.length > 0) {
@@ -184,15 +183,7 @@ const AdminManualSales = () => {
   return (
     <div className="container">
       <h1>{editingSale ? 'تعديل بيع يدوي' : 'مبيعات يدوية'}</h1>
-      <div className="admin-nav">
-        <Link to="/admin">لوحة التحكم</Link>
-        <Link to="/admin/products">المنتجات</Link>
-        <Link to="/admin/orders">الطلبات</Link>
-        <Link to="/admin/ads">الإعلانات</Link>
-        <Link to="/admin/offers">العروض</Link>
-        <Link to="/admin/manual-sales" style={{ background: 'rgba(99, 102, 241, 0.15)', fontWeight: '700' }}>مبيعات يدوية</Link>
-
-      </div>
+      <AdminNav />
 
       {message && (
         <div className="card" style={{ padding: '14px 18px', marginBottom: '16px', background: message.includes('✅') ? '#f0fdf4' : '#fef2f2', border: `1px solid ${message.includes('✅') ? '#86efac' : '#fecaca'}`, borderRadius: '12px', fontWeight: '600', fontSize: '15px' }}>
@@ -209,8 +200,17 @@ const AdminManualSales = () => {
             <select
               value={selectedProductId}
               onChange={(e) => {
-                setSelectedProductId(e.target.value);
-                setSelectedSizeName('');
+                const pid = e.target.value;
+                setSelectedProductId(pid);
+                const product = activeProducts.find(p => p._id === pid);
+                if (product) {
+                  if (product.sizes && product.sizes.length > 0) {
+                    addSizeItem(product, product.sizes[0]);
+                  } else {
+                    addItem(product);
+                  }
+                }
+                setSelectedProductId('');
               }}
               style={{ marginBottom: '8px' }}
             >
@@ -218,53 +218,10 @@ const AdminManualSales = () => {
               {activeProducts.map(product => (
                 <option key={product._id} value={product._id}>
                   {product.name}
-                  {product.sizes && product.sizes.length > 0
-                    ? ` (${product.sizes.map(s => s.name).join(', ')})`
-                    : ` - ${formatCurrency(getProductPrice(product))}`}
                 </option>
               ))}
             </select>
           </div>
-
-          {/* Size Select Dropdown */}
-          {selectedProductId && selectedProductSizes.length > 0 && (
-            <div className="form-group">
-              <label>اختر الحجم</label>
-              <select
-                value={selectedSizeName}
-                onChange={(e) => setSelectedSizeName(e.target.value)}
-                style={{ marginBottom: '8px' }}
-              >
-                <option value="">-- اختر الحجم --</option>
-                {selectedProductSizes.map(size => (
-                  <option key={size.name} value={size.name}>
-                    {size.name} - {formatCurrency(getSizePrice(selectedProduct, size.name))}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {/* Add Button */}
-          {selectedProductId && (!selectedProductSizes.length || selectedSizeName) && (
-            <button
-              type="button"
-              className="btn-primary"
-              onClick={() => {
-                if (selectedProductSizes.length > 0 && selectedSizeName) {
-                  const size = selectedProductSizes.find(s => s.name === selectedSizeName);
-                  if (size) addSizeItem(selectedProduct, size);
-                } else {
-                  addItem(selectedProduct);
-                }
-                setSelectedProductId('');
-                setSelectedSizeName('');
-              }}
-              style={{ marginBottom: '16px' }}
-            >
-              + إضافة إلى الفاتورة
-            </button>
-          )}
 
           {/* Items Table */}
           {items.length > 0 && (
@@ -286,7 +243,33 @@ const AdminManualSales = () => {
                     {items.map((item, index) => (
                       <tr key={index}>
                         <td style={{ fontWeight: '600' }}>{item.name}</td>
-                        <td>{item.selectedSize || '—'}</td>
+                        <td>{item.selectedSize ? (
+                          <select
+                            value={item.selectedSize}
+                            onChange={(e) => {
+                              const product = activeProducts.find(p => p._id === item.productId);
+                              if (!product) return;
+                              const size = product.sizes.find(s => s.name === e.target.value);
+                              if (!size) return;
+                              const price = getSizePrice(product, size.name);
+                              setItems(prev => prev.map((it, i) =>
+                                i === index ? {
+                                  ...it,
+                                  selectedSize: size.name,
+                                  unitPrice: price,
+                                  lineTotal: it.quantity * price
+                                } : it
+                              ));
+                            }}
+                            style={{ padding: '4px 6px', borderRadius: '6px', border: '1px solid #ddd', minWidth: '100px' }}
+                          >
+                            {(activeProducts.find(p => p._id === item.productId)?.sizes || []).map(size => (
+                              <option key={size.name} value={size.name}>
+                                {size.name}
+                              </option>
+                            ))}
+                          </select>
+                        ) : '—'}</td>
                         <td>{formatCurrency(item.unitPrice)}</td>
                         <td>
                           <input
@@ -344,15 +327,8 @@ const AdminManualSales = () => {
           )}
 
           {/* Payment & Notes */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '16px' }}>
-            <div className="form-group">
-              <label>طريقة الدفع</label>
-              <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
-                {PAYMENT_METHODS.map(m => (
-                  <option key={m.value} value={m.value}>{m.label}</option>
-                ))}
-              </select>
-            </div>
+          <div style={{ display: 'grid', gap: '16px', marginTop: '16px' }}>
+
             <div className="form-group">
               <label>ملاحظات (اختياري)</label>
               <input

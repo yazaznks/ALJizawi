@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
+import AdminNav from '../components/AdminNav';
 import { useProducts } from '../context/ProductContext';
-import { collection, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc, addDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
 const AdminOrders = () => {
@@ -15,6 +16,15 @@ const AdminOrders = () => {
   const [filterStatus, setFilterStatus] = useState('');
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [bulkStatus, setBulkStatus] = useState('');
+  const [drivers, setDrivers] = useState([]);
+  const [showAddDriver, setShowAddDriver] = useState(false);
+  const [driverName, setDriverName] = useState('');
+  const [driverGovernorate, setDriverGovernorate] = useState('');
+  const [driverPhone, setDriverPhone] = useState('');
+  const [selectedDriverId, setSelectedDriverId] = useState('');
+  const [showDriverConfirm, setShowDriverConfirm] = useState(false);
+  const [confirmOrderId, setConfirmOrderId] = useState(null);
+  const [confirmDriverId, setConfirmDriverId] = useState('');
 
 
   // Strip 962 prefix and leading 0 for display (e.g. "96278xxxx" -> "78xxxx")
@@ -24,10 +34,7 @@ const AdminOrders = () => {
     cleaned = cleaned.replace(/^962/, '');
     return cleaned.startsWith('0') ? cleaned.slice(1) : cleaned;
   };
-  const [driverPhone, setDriverPhone] = useState(() => {
-    const saved = localStorage.getItem('driverPhone') || '';
-    return normalizePhoneDisplay(saved);
-  });
+
   // Convert display number to full WhatsApp number (96278xxxxxxx)
   const toWhatsAppNumber = (displayNumber) => {
     if (!displayNumber) return '';
@@ -56,6 +63,21 @@ const AdminOrders = () => {
     return () => unsubscribe();
   }, []);
 
+  // Load drivers from Firestore
+  useEffect(() => {
+    const q = query(collection(db, 'drivers'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const driversData = [];
+      querySnapshot.forEach((doc) => {
+        driversData.push({ id: doc.id, ...doc.data() });
+      });
+      setDrivers(driversData);
+    }, (error) => {
+      console.error('Error loading drivers:', error);
+    });
+    return () => unsubscribe();
+  }, []);
+
   const handleDeleteOrder = async (orderId) => {
     if (window.confirm('هل أنت متأكد من حذف هذا الطلب بالكامل؟')) {
       try {
@@ -70,11 +92,6 @@ const AdminOrders = () => {
   const handleStatusChange = async (orderId, newStatus) => {
     try {
       const updateData = { status: newStatus };
-      // When marking as shipped, save the driver phone number
-      if (newStatus === 'shipped') {
-        const normalizedPhone = toWhatsAppNumber(driverPhone);
-        updateData.driverPhone = normalizedPhone;
-      }
       await updateDoc(doc(db, 'ecommerce_orders', orderId), updateData);
     } catch (error) {
       console.error('Error updating order status:', error);
@@ -82,8 +99,34 @@ const AdminOrders = () => {
     }
   };
 
-  // Extract unique governorates from orders
-  const governorates = [...new Set(orders.map(o => o.shippingAddress?.governorate).filter(Boolean))].sort();
+  const handleAddDriver = async (e) => {
+    e.preventDefault();
+    if (!driverName || !driverGovernorate || !driverPhone) {
+      alert('الرجاء ملء جميع الحقول');
+      return;
+    }
+    try {
+      await addDoc(collection(db, 'drivers'), {
+        name: driverName,
+        governorate: driverGovernorate,
+        phone: toWhatsAppNumber(driverPhone),
+        createdAt: new Date().toISOString()
+      });
+      setDriverName('');
+      setDriverGovernorate('');
+      setDriverPhone('');
+      setShowAddDriver(false);
+    } catch (error) {
+      console.error('Error adding driver:', error);
+      alert('خطأ في إضافة السائق');
+    }
+  };
+
+  // Jordan governorates
+  const governorates = [
+    'عمان', 'الزرقاء', 'إربد', 'البلقاء', 'الكرك', 'المفرق',
+    'مأدبا', 'جرش', 'عجلون', 'العقبة', 'معان', 'الطفيلة'
+  ];
 
   // Filter orders by governorate and status
   const filteredOrders = orders.filter(o => {
@@ -95,8 +138,9 @@ const AdminOrders = () => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'pending': return '#f39c12';
-      case 'shipped': return '#3498db';
-      case 'delivered': return '#27ae60';
+      case 'sent_to_driver': return '#3498db';
+      case 'picked_up': return '#8e44ad';
+      case 'payment_collected': return '#27ae60';
       case 'cancelled': return '#e74c3c';
       default: return '#95a5a6';
     }
@@ -104,18 +148,20 @@ const AdminOrders = () => {
 
   const getStatusLabel = (status) => {
     switch (status) {
-      case 'pending': return 'قيد الانتظار';
-      case 'shipped': return 'تم التوصيل للسائق';
-      case 'delivered': return 'تم التوصيل';
+      case 'pending': return 'قيد الإنتظار';
+      case 'sent_to_driver': return 'تم إرسال الطلب إلى السائق';
+      case 'picked_up': return 'تم تحميل الطلب';
+      case 'payment_collected': return 'تم تحصيل المبلغ';
       case 'cancelled': return 'ملغي';
       default: return status;
     }
   };
 
   const statusOptions = [
-    { value: 'pending', label: 'قيد الانتظار' },
-    { value: 'shipped', label: 'تم التوصيل للسائق' },
-    { value: 'delivered', label: 'تم التوصيل' },
+    { value: 'pending', label: 'قيد الإنتظار' },
+    { value: 'sent_to_driver', label: 'تم إرسال الطلب إلى السائق' },
+    { value: 'picked_up', label: 'تم تحميل الطلب' },
+    { value: 'payment_collected', label: 'تم تحصيل المبلغ' },
     { value: 'cancelled', label: 'ملغي' },
   ];
 
@@ -147,9 +193,6 @@ const AdminOrders = () => {
     const selectedOrders = filteredOrders.filter(o => selectedIds.has(o.id));
     const updates = selectedOrders.map(o => {
       const updateData = { status };
-      if (status === 'shipped') {
-        updateData.driverPhone = toWhatsAppNumber(driverPhone);
-      }
       return updateDoc(doc(db, 'ecommerce_orders', o.id), updateData);
     });
     await Promise.all(updates);
@@ -165,6 +208,85 @@ const AdminOrders = () => {
     const formattedTotal = lineTotal % 1 === 0 ? lineTotal.toFixed(0) : lineTotal.toFixed(1);
     const sizeText = item.selectedSize ? ` (${item.selectedSize})` : '';
     return `* ${item.name}${sizeText}: ${formattedUnit} د.أ × ${item.quantity} = ${formattedTotal} د.أ`;
+  };
+
+  // Get delivery timeline based on total items
+  const getDeliveryTimeline = (totalItems) => {
+    const count = totalItems || 0;
+    if (count <= 5) return 'من 1 إلى 10 أيام';
+    if (count <= 10) return 'من 1 إلى 7 أيام';
+    if (count <= 20) return 'من 1 إلى 3 أيام';
+    return 'خلال يومين'; 
+  };
+
+  // Send order confirmation to customer via WhatsApp
+  const sendCustomerConfirmation = (order) => {
+    const customerPhone = order.customerInfo?.phone;
+    if (!customerPhone) {
+      alert('لا يوجد رقم هاتف للعميل');
+      return;
+    }
+
+    const totalItems = order.items?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0;
+    const deliveryTimeline = getDeliveryTimeline(totalItems);
+
+    const itemsList = order.items?.map(item => formatItemForWhatsApp(item)).join('\n') || '  لا توجد منتجات';
+    const subtotal = parseFloat(order.pricing?.subtotal || 0);
+    const shippingFee = parseFloat(order.pricing?.shippingFee || 0);
+    const totalAmount = parseFloat(order.pricing?.total || 0);
+    const formattedSubtotal = subtotal % 1 === 0 ? subtotal.toFixed(0) : subtotal.toFixed(1);
+    const formattedShipping = shippingFee % 1 === 0 ? shippingFee.toFixed(0) : shippingFee.toFixed(1);
+    const formattedTotal = totalAmount % 1 === 0 ? totalAmount.toFixed(0) : totalAmount.toFixed(1);
+    const feeLabel = shippingFee === 0 ? 'مجاناً' : `${formattedShipping} د.أ`;
+
+    const message =
+     
+      `مزارع ومشاتل الجيزاوي ترحب بكم\n\n` +
+       `شكراً لطلبكم \n` +
+      `تم استلام الطلب بنجاح، ونعمل حالياً على تجهيزه.\n\n` +
+      `تفاصيل الطلب:\n${itemsList}\n\n` +
+      `المجموع الفرعي: ${formattedSubtotal} د.أ\n` +
+      `رسوم التوصيل: ${feeLabel}\n` +
+      `الإجمالي: ${formattedTotal} د.أ\n\n` +
+      `سيتواصل مندوب التوصيل معكم ${deliveryTimeline} لتأكيد الطلب وترتيب عملية التسليم.\n\n` +
+      `شكراً لاختياركم مزارع ومشاتل الجيزاوي.`;
+const encodedText = encodeURIComponent(message);
+
+    const whatsappUrl = `https://wa.me/${toWhatsAppNumber(customerPhone)}?text=${encodedText}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
+  // Send driver assignment notification to customer
+  const sendDriverNotification = (order) => {
+    setConfirmOrderId(order.id);
+    setConfirmDriverId(order.driverPhone || (drivers[0]?.phone || ''));
+    setShowDriverConfirm(true);
+  };
+
+  const confirmSendDriverNotification = () => {
+    const order = orders.find(o => o.id === confirmOrderId);
+    if (!order) return;
+
+    const customerPhone = order.customerInfo?.phone;
+    if (!customerPhone) {
+      alert('لا يوجد رقم هاتف للعميل');
+      setShowDriverConfirm(false);
+      return;
+    }
+
+    const selectedDriver = drivers.find(d => d.phone === confirmDriverId);
+    const driverNameToUse = selectedDriver?.name || 'غير محدد';
+    const driverPhoneToUse = confirmDriverId;
+
+    const message =
+      `🚚 طلبكم الآن مع السائق وجاهز للتسليم.\n\n` +
+      `السائق: ${driverNameToUse}\n` +
+      `رقم التواصل: ${normalizePhoneDisplay(driverPhoneToUse)}\n\n` +
+      `شكراً لاختياركم مزارع ومشاتل الجيزاوي.`;
+
+    const whatsappUrl = `https://wa.me/${toWhatsAppNumber(customerPhone)}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+    setShowDriverConfirm(false);
   };
 
   // Format a single order for WhatsApp message
@@ -185,7 +307,7 @@ const AdminOrders = () => {
       `العنوان: ${order.shippingAddress?.governorate || ''}, ${order.shippingAddress?.street || ''}, ${order.shippingAddress?.building || ''}\n` +
       `المنتجات:\n${itemsList || '  لا توجد منتجات'}\n` +
       `المجموع الفرعي: ${formattedSubtotal} د.أ\n` +
-      `رسوم التوصيل: ${feeLabel}\n` +
+      `رسوم التوصيل: ${feeLabel} د.أ\n` +
       `الإجمالي: ${formattedTotal} د.أ\n` +
       `التاريخ: ${order.createdAt ? new Date(order.createdAt).toLocaleDateString() : '-'}\n`
     );
@@ -198,19 +320,23 @@ const AdminOrders = () => {
       return;
     }
 
-    if (!driverPhone) {
-      alert('الرجاء إدخال رقم هاتف السائق');
+    if (!selectedDriverId) {
+      alert('الرجاء اختيار سائق');
       return;
     }
 
-    const normalizedPhone = toWhatsAppNumber(driverPhone);
-    localStorage.setItem('driverPhone', normalizedPhone);
+    const selectedDriver = drivers.find(d => d.id === selectedDriverId);
+    if (!selectedDriver) return;
 
     const selectedOrders = filteredOrders.filter(o => selectedIds.has(o.id));
 
-    // Auto-update all selected orders to "shipped" and save driver phone
-    const batchUpdates = selectedOrders.filter(o => o.status !== 'shipped').map(o =>
-      updateDoc(doc(db, 'ecommerce_orders', o.id), { status: 'shipped', driverPhone: normalizedPhone })
+    // Auto-update all selected orders to "sent_to_driver" and save driver id and phone
+    const batchUpdates = selectedOrders.filter(o => o.status !== 'sent_to_driver').map(o =>
+      updateDoc(doc(db, 'ecommerce_orders', o.id), { 
+        status: 'sent_to_driver', 
+        driverId: selectedDriver.id,
+        driverPhone: selectedDriver.phone 
+      })
     );
     if (batchUpdates.length > 0) {
       await Promise.all(batchUpdates);
@@ -227,8 +353,7 @@ const AdminOrders = () => {
 
     message += 'تم إرسال الطلبات بنجاح';
 
-    const whatsappUrl = `https://wa.me/${normalizedPhone}?text=${encodeURIComponent(message)}`;
-    
+    const whatsappUrl = `https://wa.me/${selectedDriver.phone}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
 
@@ -237,17 +362,74 @@ const AdminOrders = () => {
   return (
     <div className="container">
       <h1>{t('manageOrders')}</h1>
-      <div className="admin-nav">
-        <Link to="/admin">{t('dashboard')}</Link>
-        <Link to="/admin/products">{t('products')}</Link>
-        <Link to="/admin/orders">{t('orders')}</Link>
-        <Link to="/admin/ads">{t('ads')}</Link>
-        <Link to="/admin/offers">العروض</Link>
-        <Link to="/admin/manual-sales">مبيعات يدوية</Link>
-
-      </div>
+      <AdminNav />
 
       <div className="card">
+        {/* Add Driver Button */}
+        <div style={{marginBottom: '15px', display: 'flex', justifyContent: 'flex-end'}}>
+          <button
+            onClick={() => setShowAddDriver(!showAddDriver)}
+            className="btn-primary"
+            style={{padding: '8px 16px', fontSize: '14px', fontWeight: '600'}}
+          >
+            {showAddDriver ? 'إلغاء' : '➕ إضافة سائق'}
+          </button>
+        </div>
+
+        {/* Add Driver Form */}
+        {showAddDriver && (
+          <div style={{
+            marginBottom: '20px',
+            padding: '20px',
+            background: '#f8f9fa',
+            borderRadius: '12px',
+            border: '1px solid #e5e7eb'
+          }}>
+            <h3 style={{marginBottom: '15px', fontSize: '16px'}}>إضافة سائق جديد</h3>
+            <form onSubmit={handleAddDriver}>
+              <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '12px'}}>
+                <div className="form-group" style={{margin: 0}}>
+                  <label>اسم السائق *</label>
+                  <input
+                    type="text"
+                    value={driverName}
+                    onChange={(e) => setDriverName(e.target.value)}
+                    required
+                    placeholder="اسم السائق"
+                  />
+                </div>
+                <div className="form-group" style={{margin: 0}}>
+                  <label>المحافظة *</label>
+                  <select
+                    value={driverGovernorate}
+                    onChange={(e) => setDriverGovernorate(e.target.value)}
+                    required
+                  >
+                    <option value="">اختر المحافظة</option>
+                    {governorates.map(gov => (
+                      <option key={gov} value={gov}>{gov}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group" style={{margin: 0}}>
+                  <label>رقم الهاتف *</label>
+                  <input
+                    type="tel"
+                    value={driverPhone}
+                    onChange={(e) => setDriverPhone(e.target.value)}
+                    required
+                    placeholder="78xxxxxxx"
+                    style={{direction: 'ltr'}}
+                  />
+                </div>
+              </div>
+              <button type="submit" className="btn-success" style={{padding: '8px 20px', fontSize: '14px', fontWeight: '600'}}>
+                حفظ السائق
+              </button>
+            </form>
+          </div>
+        )}
+
         {/* Filters Row */}
         <div style={{marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap'}}>
           {/* Governorate Filter */}
@@ -273,9 +455,10 @@ const AdminOrders = () => {
             style={{padding: '8px 12px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '14px', minWidth: '160px'}}
           >
             <option value="">الكل</option>
-            <option value="pending">🟡 قيد الانتظار ({orders.filter(o => o.status === 'pending').length})</option>
-            <option value="shipped">🟢 تم التوصيل للسائق ({orders.filter(o => o.status === 'shipped').length})</option>
-            <option value="delivered">✅ تم التوصيل ({orders.filter(o => o.status === 'delivered').length})</option>
+            <option value="pending">🟡 قيد الإنتظار ({orders.filter(o => o.status === 'pending').length})</option>
+            <option value="sent_to_driver">🔵 تم إرسال الطلب إلى السائق ({orders.filter(o => o.status === 'sent_to_driver').length})</option>
+            <option value="picked_up">🟣 تم تحميل الطلب ({orders.filter(o => o.status === 'picked_up').length})</option>
+            <option value="payment_collected">✅ تم تحصيل المبلغ ({orders.filter(o => o.status === 'payment_collected').length})</option>
             <option value="cancelled">🔴 ملغي ({orders.filter(o => o.status === 'cancelled').length})</option>
           </select>
 
@@ -305,21 +488,25 @@ const AdminOrders = () => {
           alignItems: 'center'
         }}>
           <span style={{fontWeight: '600', fontSize: '15px', color: '#166534'}}>📱 إرسال إلى السائق عبر واتساب</span>
-          <input
-            type="tel"
-            placeholder="رقم السائق (مثال: 78xxxxxxx)"
-            value={driverPhone}
-            onChange={(e) => setDriverPhone(e.target.value)}
+          <select
+            value={selectedDriverId}
+            onChange={(e) => setSelectedDriverId(e.target.value)}
             style={{
               flex: '1',
               minWidth: '200px',
               padding: '10px 14px',
               borderRadius: '8px',
               border: '1px solid #86efac',
-              fontSize: '14px',
-              direction: 'ltr'
+              fontSize: '14px'
             }}
-          />
+          >
+            <option value="">اختر السائق...</option>
+            {drivers.map(driver => (
+              <option key={driver.id} value={driver.id}>
+                {driver.name} - {driver.governorate} ({normalizePhoneDisplay(driver.phone)})
+              </option>
+            ))}
+          </select>
           <button
             onClick={sendToWhatsApp}
             className="btn-success"
@@ -340,7 +527,7 @@ const AdminOrders = () => {
         <table className="table">
           <thead>
             <tr>
-              <th>
+              <th style={{width: '40px'}}>
                 <input
                   type="checkbox"
                   checked={filteredOrders.length > 0 && selectedIds.size === filteredOrders.length}
@@ -349,22 +536,18 @@ const AdminOrders = () => {
                   onClick={(e) => e.stopPropagation()}
                 />
               </th>
-              <th>{t('orderNumber')}</th>
               <th>{t('customer')}</th>
-     
               <th>المحافظة</th>
-              <th>رقم السائق</th>
               <th>{t('total')}</th>
               <th>{t('status')}</th>
               <th>{t('date')}</th>
               <th>{t('actions')}</th>
-              <th>حذف</th>
             </tr>
           </thead>
           <tbody>
             {filteredOrders.length === 0 ? (
               <tr>
-                <td colSpan="11" style={{textAlign: 'center', padding: '20px'}}>
+                <td colSpan="7" style={{textAlign: 'center', padding: '20px'}}>
                   لا توجد طلبات
                 </td>
               </tr>
@@ -388,13 +571,8 @@ const AdminOrders = () => {
                       style={{width: '18px', height: '18px', cursor: 'pointer'}}
                     />
                   </td>
-                  <td>{order.orderNumber}</td>
                   <td>{order.customerInfo?.name}</td>
-        
                   <td>{order.shippingAddress?.governorate}</td>
-                  <td style={{direction: 'ltr', textAlign: 'left'}}>
-                    {order.driverPhone ? normalizePhoneDisplay(order.driverPhone) : '-'}
-                  </td>
                   <td>{formatCurrency(order.pricing?.total)}</td>
                   <td>
                     <span style={{
@@ -410,25 +588,35 @@ const AdminOrders = () => {
                   </td>
                   <td>{order.createdAt ? new Date(order.createdAt).toLocaleDateString() : '-'}</td>
                   <td onClick={(e) => e.stopPropagation()}>
-                    <select
-                      value={order.status}
-                      onChange={(e) => handleStatusChange(order.id, e.target.value)}
-                      style={{padding: '5px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '13px'}}
-                    >
-                      {statusOptions.map(opt => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
-                    </select>
-                  </td>
-                  <td onClick={(e) => e.stopPropagation()}>
-                    <button
-                      onClick={() => handleDeleteOrder(order.id)}
-                      className="btn-danger"
-                      style={{padding: '4px 8px', fontSize: '12px', lineHeight: 1}}
-                      title="حذف الطلب"
-                    >
-                      ✕
-                    </button>
+                    <div style={{display: 'flex', gap: '6px', alignItems: 'center'}}>
+                      <button
+                        onClick={() => sendCustomerConfirmation(order)}
+                        className="btn-success"
+                        style={{padding: '4px 10px', fontSize: '12px', whiteSpace: 'nowrap'}}
+                        title="إرسال تأكيد للعميل"
+                      >
+                        📱
+                      </button>
+                      {order.status === 'picked_up' && (
+                        <button
+                          onClick={() => sendDriverNotification(order)}
+                          className="btn-primary"
+                          style={{padding: '4px 10px', fontSize: '12px', whiteSpace: 'nowrap'}}
+                          title="إشعار العميل بوصول السائق"
+                        >
+                          🚚
+                        </button>
+                      )}
+                      <select
+                        value={order.status}
+                        onChange={(e) => handleStatusChange(order.id, e.target.value)}
+                        style={{padding: '6px 10px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '13px', minWidth: '120px'}}
+                      >
+                        {statusOptions.map(opt => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </div>
                   </td>
                 </tr>
                 );
@@ -438,11 +626,11 @@ const AdminOrders = () => {
         </table>
         </div>
 
-        {/* Bulk Status - Minimal footer */}
+        {/* Bulk Actions Footer */}
         {selectedIds.size > 0 && (
           <div style={{
             marginTop: '12px',
-            padding: '10px 16px',
+            padding: '12px 16px',
             background: '#f8f9fa',
             borderRadius: '10px',
             display: 'flex',
@@ -466,9 +654,62 @@ const AdminOrders = () => {
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
             </select>
+            <button
+              onClick={async () => {
+                if (window.confirm(`هل أنت متأكد من حذف ${selectedIds.size} طلب؟`)) {
+                  const deletes = filteredOrders.filter(o => selectedIds.has(o.id)).map(o => deleteDoc(doc(db, 'ecommerce_orders', o.id)));
+                  await Promise.all(deletes);
+                  setSelectedIds(new Set());
+                }
+              }}
+              className="btn-danger"
+              style={{padding: '6px 12px', fontSize: '13px', fontWeight: '600'}}
+            >
+              🗑 حذف المحدد
+            </button>
           </div>
         )}
       </div>
+
+      {/* Driver Confirmation Modal */}
+      {showDriverConfirm && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000
+        }} onClick={() => setShowDriverConfirm(false)}>
+          <div className="card" style={{
+            maxWidth: '420px', width: '90%', maxHeight: '85vh', overflow: 'auto', position: 'relative'
+          }} onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setShowDriverConfirm(false)}
+              style={{
+                position: 'absolute', top: '15px', right: '15px',
+                background: '#e74c3c', color: 'white', border: 'none', borderRadius: '50%', width: '32px', height: '32px',
+                fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0
+              }}
+            >✕</button>
+
+            <h3 style={{marginBottom: '12px', fontSize: '16px'}}>تأكيد إرسال إشعار السائق</h3>
+            <p style={{marginBottom: '12px', color: '#444'}}>يرجى اختيار السائق الذي تريد إرسال الإشعار باسمه:</p>
+
+            <select
+              value={confirmDriverId}
+              onChange={(e) => setConfirmDriverId(e.target.value)}
+              style={{width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '14px', marginBottom: '16px'}}
+            >
+              <option value="">اختر السائق...</option>
+              {drivers.map(driver => (
+                <option key={driver.id} value={driver.phone}>{driver.name} - {normalizePhoneDisplay(driver.phone)}</option>
+              ))}
+            </select>
+
+            <div style={{display: 'flex', gap: '8px', justifyContent: 'flex-end'}}>
+              <button onClick={() => setShowDriverConfirm(false)} className="btn-secondary" style={{padding: '8px 14px', fontSize: '13px'}}>إلغاء</button>
+              <button onClick={confirmSendDriverNotification} className="btn-primary" style={{padding: '8px 14px', fontSize: '13px'}}>تأكيد الإرسال</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Order Details Modal */}
       {selectedOrder && (

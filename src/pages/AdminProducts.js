@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useProducts } from '../context/ProductContext';
 //import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import AdminNav from '../components/AdminNav';
 
 const AdminProducts = () => {
   const { t, formatCurrency } = useLanguage();
@@ -19,7 +20,8 @@ const AdminProducts = () => {
     stock: '',
     featured: false,
     images: [],
-    sizes: []
+    sizes: [],
+    imageSizes: {} // map of image URL -> size name (or 'all')
   });
 
   const handleDelete = async (firestoreId, customId) => {
@@ -36,6 +38,11 @@ const AdminProducts = () => {
   const handleEdit = (product) => {
     setEditingProduct(product);
     setKeptImages(product.images ? [...product.images] : []);
+    // Restore image size tags from product data
+    const restoredImageSizes = {};
+    if (product.imageSizes && typeof product.imageSizes === 'object') {
+      Object.assign(restoredImageSizes, product.imageSizes);
+    }
     setFormData({
       name: product.name,
       description: product.description,
@@ -45,7 +52,8 @@ const AdminProducts = () => {
       stock: product.stock.toString(),
       featured: product.featured,
       images: [],
-      sizes: product.sizes ? product.sizes.map(s => ({ ...s })) : []
+      sizes: product.sizes ? product.sizes.map(s => ({ ...s })) : [],
+      imageSizes: restoredImageSizes
     });
     setShowForm(true);
   };
@@ -69,17 +77,18 @@ const AdminProducts = () => {
       if (result.success) {
         setShowForm(false);
         setEditingProduct(null);
-        setFormData({
-          name: '',
-          description: '',
-          price: '',
-          discountPercent: '',
-          category: '',
-          stock: '',
-          featured: false,
-          images: [],
-          sizes: []
-        });
+      setFormData({
+        name: '',
+        description: '',
+        price: '',
+        discountPercent: '',
+        category: '',
+        stock: '',
+        featured: false,
+        images: [],
+        sizes: [],
+        imageSizes: {}
+      });
       } else {
         alert(`Error ${editingProduct ? 'updating' : 'adding'} product: ` + result.message);
       }
@@ -101,7 +110,8 @@ const AdminProducts = () => {
       stock: '',
       featured: false,
       images: [],
-      sizes: []
+      sizes: [],
+      imageSizes: {}
     });
   };
 
@@ -133,15 +143,7 @@ const AdminProducts = () => {
   return (
     <div className="container">
       <h1>{t('manageProducts')}</h1>
-      <div className="admin-nav">
-        <Link to="/admin">{t('dashboard')}</Link>
-        <Link to="/admin/products">{t('products')}</Link>
-        <Link to="/admin/orders">{t('orders')}</Link>
-        <Link to="/admin/ads">{t('ads')}</Link>
-        <Link to="/admin/offers">العروض</Link>
-        <Link to="/admin/manual-sales">مبيعات يدوية</Link>
-  
-      </div>
+      <AdminNav />
 
       <div style={{marginBottom: '20px'}}>
         <button 
@@ -275,22 +277,28 @@ const AdminProducts = () => {
                 />
                 <p style={{color: '#999', fontSize: '12px', marginTop: '4px'}}>يمكنك رفع صور وفيديوهات</p>
 
-              {/* Show existing images when editing — with remove buttons */}
+              {/* Show existing images when editing — with remove and size tagging */}
               {editingProduct && keptImages && keptImages.length > 0 && (
                 <div style={{marginTop: '12px'}}>
                   <p>الصور الحالية (اضغط ✕ لحذف):</p>
                   <div style={{display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '8px'}}>
                     {keptImages.map((image, index) => (
-                      <div key={`existing-${index}`} style={{position: 'relative', width: '100px', height: '100px'}}>
+                      <div key={`existing-${index}`} style={{position: 'relative', width: '120px'}}>
                         <img
                           src={image.url}
                           alt={`Current ${index + 1}`}
                           className="image-preview"
-                          style={{width: '100%', height: '100%', objectFit: 'cover'}}
+                          style={{width: '100px', height: '100px', objectFit: 'cover'}}
                         />
                         <button
                           type="button"
-                          onClick={() => setKeptImages(prev => prev.filter((_, i) => i !== index))}
+                          onClick={() => {
+                            const newKept = keptImages.filter((_, i) => i !== index);
+                            setKeptImages(newKept);
+                            const newImageSizes = {...formData.imageSizes};
+                            delete newImageSizes[image.url];
+                            setFormData({...formData, imageSizes: newImageSizes});
+                          }}
                           style={{
                             position: 'absolute',
                             top: '-6px',
@@ -312,6 +320,18 @@ const AdminProducts = () => {
                         >
                           ✕
                         </button>
+                        <div style={{marginTop: '4px'}}>
+                          <select
+                            value={formData.imageSizes[image.url] || 'all'}
+                            onChange={(e) => setFormData({...formData, imageSizes: {...formData.imageSizes, [image.url]: e.target.value}})}
+                            style={{width: '100px', fontSize: '11px', padding: '2px', borderRadius: '4px', border: '1px solid #ddd', direction: 'rtl'}}
+                          >
+                            <option value="all">جميع الأحجام</option>
+                            {formData.sizes.filter(s => s.name).map(s => (
+                              <option key={s.name} value={s.name}>{s.name}</option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -323,15 +343,31 @@ const AdminProducts = () => {
                 <div style={{marginTop: '12px'}}>
                   <p>{t('newImagesToUpload')} {formData.images.length} {t('selected')}</p>
                   <div style={{display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '8px'}}>
-                    {formData.images.map((file, index) => (
-                      <img
-                        key={`new-${index}`}
-                        src={URL.createObjectURL(file)}
-                        alt={`New Preview ${index + 1}`}
-                        className="image-preview"
-                        style={{width: '100px', height: '100px', objectFit: 'cover'}}
-                      />
-                    ))}
+                    {formData.images.map((file, index) => {
+                      const fakeUrl = `temp-${index}`;
+                      return (
+                        <div key={`new-${index}`} style={{position: 'relative'}}>
+                          <img
+                            src={URL.createObjectURL(file)}
+                            alt={`New Preview ${index + 1}`}
+                            className="image-preview"
+                            style={{width: '100px', height: '100px', objectFit: 'cover'}}
+                          />
+                          <div style={{marginTop: '4px'}}>
+                            <select
+                              value={formData.imageSizes[fakeUrl] || 'all'}
+                              onChange={(e) => setFormData({...formData, imageSizes: {...formData.imageSizes, [fakeUrl]: e.target.value}})}
+                              style={{width: '100px', fontSize: '11px', padding: '2px', borderRadius: '4px', border: '1px solid #ddd', direction: 'rtl'}}
+                            >
+                              <option value="all">جميع الأحجام</option>
+                              {formData.sizes.filter(s => s.name).map(s => (
+                                <option key={s.name} value={s.name}>{s.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}

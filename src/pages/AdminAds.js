@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useBanner } from '../context/BannerContext';
 import { useLanguage } from '../context/LanguageContext';
+import AdminNav from '../components/AdminNav';
 
 const AdminAds = () => {
   const { banners, addBanner, deleteBanner } = useBanner();
@@ -53,15 +54,7 @@ const AdminAds = () => {
   return (
     <div className="container">
       <h1>{t('ads')}</h1>
-      <div className="admin-nav">
-        <Link to="/admin">{t('dashboard')}</Link>
-        <Link to="/admin/products">{t('products')}</Link>
-        <Link to="/admin/orders">{t('orders')}</Link>
-        <Link to="/admin/ads">{t('ads')}</Link>
-        <Link to="/admin/offers">العروض</Link>
-        <Link to="/admin/manual-sales">مبيعات يدوية</Link>
-      
-      </div>
+      <AdminNav />
 
       <div className="card" style={{marginTop: '30px'}}>
         <h2>إضافة بانر جديد</h2>

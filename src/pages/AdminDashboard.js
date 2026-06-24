@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
+import AdminNav from '../components/AdminNav';
 import { useProducts } from '../context/ProductContext';
 import { useSales } from '../context/SaleContext';
 import { collection, onSnapshot, query, orderBy, limit, getDocs } from 'firebase/firestore';
@@ -16,6 +17,9 @@ const AdminDashboard = () => {
   const [search, setSearch] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [selectedSale, setSelectedSale] = useState(null);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [drivers, setDrivers] = useState([]);
 
   useEffect(() => {
     const ordersQuery = query(collection(db, 'ecommerce_orders'), orderBy('createdAt', 'desc'));
@@ -25,6 +29,21 @@ const AdminDashboard = () => {
       setOrders(data);
     }, () => setOrders([]));
 
+    return () => unsubscribe();
+  }, []);
+
+  // Load drivers
+  useEffect(() => {
+    const q = query(collection(db, 'drivers'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const driversData = [];
+      querySnapshot.forEach((doc) => {
+        driversData.push({ id: doc.id, ...doc.data() });
+      });
+      setDrivers(driversData);
+    }, (error) => {
+      console.error('Error loading drivers:', error);
+    });
     return () => unsubscribe();
   }, []);
 
@@ -154,6 +173,83 @@ const AdminDashboard = () => {
     return result;
   }, [orders, search, dateFrom, dateTo]);
 
+  const normalizePhoneDisplay = (phone) => {
+    if (!phone) return '';
+    let cleaned = phone.replace(/[^\d]/g, '');
+    cleaned = cleaned.replace(/^962/, '');
+    return cleaned.startsWith('0') ? cleaned.slice(1) : cleaned;
+  };
+
+  const toWhatsAppNumber = (displayNumber) => {
+    if (!displayNumber) return '';
+    let cleaned = displayNumber.replace(/[^\d]/g, '');
+    cleaned = cleaned.replace(/^0+/, '');
+    cleaned = cleaned.replace(/^962/, '');
+    return '962' + cleaned;
+  };
+
+  const formatItemForWhatsApp = (item) => {
+    const unitPrice = parseFloat(item.price);
+    const formattedUnit = unitPrice % 1 === 0 ? unitPrice.toFixed(0) : unitPrice.toFixed(1);
+    const lineTotal = unitPrice * item.quantity;
+    const formattedTotal = lineTotal % 1 === 0 ? lineTotal.toFixed(0) : lineTotal.toFixed(1);
+    const sizeText = item.selectedSize ? ` (${item.selectedSize})` : '';
+    return `* ${item.name}${sizeText}: ${formattedUnit} د.أ × ${item.quantity} = ${formattedTotal} د.أ`;
+  };
+
+  const getDeliveryTimeline = (totalItems) => {
+    const count = totalItems || 0;
+    if (count <= 3) return 'خلال يومين';
+    if (count <= 7) return 'من 1 إلى 3 أيام';
+    if (count <= 10) return 'من 1 إلى 7 أيام';
+    return 'من 1 إلى 10 أيام';
+  };
+
+  const sendCustomerConfirmation = (order) => {
+    const customerPhone = order.customerInfo?.phone;
+    if (!customerPhone) {
+      alert('لا يوجد رقم هاتف للعميل');
+      return;
+    }
+    const totalItems = order.items?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0;
+    const deliveryTimeline = getDeliveryTimeline(totalItems);
+    const itemsList = order.items?.map(item => formatItemForWhatsApp(item)).join('\n') || '  لا توجد منتجات';
+    const totalAmount = parseFloat(order.pricing?.total || 0);
+    const formattedTotal = totalAmount % 1 === 0 ? totalAmount.toFixed(0) : totalAmount.toFixed(1);
+    const message =
+      `شكراً لطلبكم 🌷\n` +
+      `مزارع ومشاتل الجيزاوي ترحب بكم\n` +
+      `تم استلام طلبكم بنجاح، ونعمل حالياً على تجهيزه.\n\n` +
+      `📋 تفاصيل الطلب:\n${itemsList}\n\n` +
+      `💰 الإجمالي: ${formattedTotal} د.أ\n\n` +
+      `📅 ${deliveryTimeline}\n` +
+      `سيتواصل مندوب التوصيل معكم لتأكيد الطلب وترتيب عملية التسليم.\n\n` +
+      `شكراً لاختياركم مزارع ومشاتل الجيزاوي.`;
+    const whatsappUrl = `https://wa.me/${toWhatsAppNumber(customerPhone)}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
+  const sendDriverNotification = (order) => {
+    const customerPhone = order.customerInfo?.phone;
+    if (!customerPhone) {
+      alert('لا يوجد رقم هاتف للعميل');
+      return;
+    }
+    if (!order.driverPhone) {
+      alert('لم يتم تعيين سائق لهذا الطلب بعد');
+      return;
+    }
+    const driver = drivers.find(d => d.phone === order.driverPhone);
+    const driverName = driver?.name || 'غير محدد';
+    const message =
+      `🚚 طلبكم الآن مع السائق وجاهز للتسليم.\n\n` +
+      `السائق: ${driverName}\n` +
+      `رقم التواصل: ${normalizePhoneDisplay(order.driverPhone)}\n\n` +
+      `شكراً لاختياركم مزارع ومشاتل الجيزاوي.`;
+    const whatsappUrl = `https://wa.me/${toWhatsAppNumber(customerPhone)}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
   const filteredSales = useMemo(() => {
     let result = sales;
     if (search) {
@@ -181,15 +277,7 @@ const AdminDashboard = () => {
   return (
     <div className="container">
       <h1>{t('dashboard')}</h1>
-      <div className="admin-nav">
-        <Link to="/admin">{t('dashboard')}</Link>
-        <Link to="/admin/products">{t('products')}</Link>
-        <Link to="/admin/orders">{t('orders')}</Link>
-        <Link to="/admin/ads">{t('ads')}</Link>
-        <Link to="/admin/offers">العروض</Link>
-        <Link to="/admin/manual-sales">مبيعات يدوية</Link>
- 
-      </div>
+      <AdminNav />
 
  
 
@@ -381,12 +469,46 @@ const AdminDashboard = () => {
                 padding: '10px 0', borderBottom: i < all.length - 1 ? '1px solid #f3f4f6' : 'none',
                 fontSize: '14px'
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '10px',
+                    cursor: 'pointer',
+                    textDecoration: 'underline'
+                  }}
+                  onClick={() => {
+                    if (item.type === 'sale') setSelectedSale(item);
+                    if (item.type === 'order') setSelectedOrder(item);
+                  }}
+                >
                   <span style={{
                     width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0,
                     background: item.type === 'order' ? '#3b82f6' : '#6366f1'
                   }} />
                   <span>{item.label}</span>
+                  {item.type === 'order' && item.status === 'pending' && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); sendCustomerConfirmation(orders.find(o => o.id === item.id)); }}
+                      style={{
+                        background: '#dcfce7', border: '1px solid #86efac', borderRadius: '6px',
+                        padding: '2px 8px', fontSize: '12px', cursor: 'pointer', color: '#166534'
+                      }}
+                      title="إرسال تأكيد للعميل"
+                    >
+                      📱
+                    </button>
+                  )}
+                  {item.type === 'order' && item.status === 'picked_up' && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); sendDriverNotification(orders.find(o => o.id === item.id)); }}
+                      style={{
+                        background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '6px',
+                        padding: '2px 8px', fontSize: '12px', cursor: 'pointer', color: '#166534'
+                      }}
+                      title="إشعار العميل بوصول السائق"
+                    >
+                      🚚
+                    </button>
+                  )}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <span style={{
@@ -403,6 +525,134 @@ const AdminDashboard = () => {
           })()}
         </div>
       </div>
+
+      {selectedSale && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999
+        }} onClick={() => setSelectedSale(null)}>
+          <div className="card" style={{ maxWidth: '700px', width: '90%', maxHeight: '80vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ marginBottom: '12px' }}>تفاصيل البيع اليدوي</h3>
+            <div style={{ marginBottom: '12px', fontSize: '14px', color: '#555' }}>
+              {new Date(selectedSale.date).toLocaleString('ar-JO')}
+            </div>
+            <table className="table" style={{ marginBottom: '12px' }}>
+              <thead>
+                <tr>
+                  <th>المنتج</th>
+                  <th>الحجم</th>
+                  <th>الكمية</th>
+                  <th>سعر الوحدة</th>
+                  <th>المجموع</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(sales.find(s => s.id === selectedSale.id)?.items || []).map((item, i) => (
+                  <tr key={i}>
+                    <td style={{ fontWeight: '600' }}>{item.name}</td>
+                    <td>{item.selectedSize || '—'}</td>
+                    <td>{item.quantity}</td>
+                    <td>{formatCurrency(item.unitPrice)}</td>
+                    <td style={{ fontWeight: '700' }}>{formatCurrency(item.lineTotal)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <span>المجموع الفرعي:</span>
+              <span>{formatCurrency(sales.find(s => s.id === selectedSale.id)?.subtotal || 0)}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <span>الخصم:</span>
+              <span>{formatCurrency(sales.find(s => s.id === selectedSale.id)?.discount || 0)}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '16px', borderTop: '2px solid #dee2e6', paddingTop: '8px' }}>
+              <span>الإجمالي:</span>
+              <span style={{ color: '#28a745' }}>{formatCurrency(sales.find(s => s.id === selectedSale.id)?.total || 0)}</span>
+            </div>
+            <div style={{ marginTop: '12px', textAlign: 'left' }}>
+              <button onClick={() => setSelectedSale(null)} className="btn-secondary">إغلاق</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedOrder && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999
+        }} onClick={() => setSelectedOrder(null)}>
+          <div className="card" style={{ maxWidth: '700px', width: '90%', maxHeight: '80vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ marginBottom: '12px' }}>تفاصيل الطلب</h3>
+            <div style={{ marginBottom: '12px', fontSize: '14px', color: '#555' }}>
+              {new Date(selectedOrder.date).toLocaleString('ar-JO')}
+            </div>
+            <div style={{ marginBottom: '12px' }}>
+              <strong>العميل:</strong> {orders.find(o => o.id === selectedOrder.id)?.customerInfo?.name || '—'}<br />
+              <strong>الهاتف:</strong> {orders.find(o => o.id === selectedOrder.id)?.customerInfo?.phone || '—'}<br />
+              <strong>العنوان:</strong> {(() => {
+                const o = orders.find(o => o.id === selectedOrder.id);
+                const addr = o?.shippingAddress || o?.customerInfo || {};
+                const parts = [addr?.governorate, addr?.street, addr?.building].filter(v => v && String(v).trim() !== '');
+                return parts.length ? parts.join('، ') : '—';
+              })()}
+            </div>
+            <table className="table" style={{ marginBottom: '12px' }}>
+              <thead>
+                <tr>
+                  <th>المنتج</th>
+                  <th>الكمية</th>
+                  <th>السعر</th>
+                  <th>المجموع</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(orders.find(o => o.id === selectedOrder.id)?.items || []).map((item, i) => (
+                  <tr key={i}>
+                    <td style={{ fontWeight: '600' }}>{item.name || item.product || '—'}</td>
+                    <td>{item.quantity || 1}</td>
+                    <td>{formatCurrency(item.price || 0)}</td>
+                    <td style={{ fontWeight: '700' }}>{formatCurrency((item.quantity || 1) * (item.price || 0))}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <span>المجموع الفرعي:</span>
+              <span>{formatCurrency(orders.find(o => o.id === selectedOrder.id)?.pricing?.subtotal || 0)}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <span>التوصيل:</span>
+              <span>{formatCurrency(orders.find(o => o.id === selectedOrder.id)?.pricing?.deliveryFee || 0)}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '16px', borderTop: '2px solid #dee2e6', paddingTop: '8px' }}>
+              <span>الإجمالي:</span>
+              <span style={{ color: '#28a745' }}>{formatCurrency(orders.find(o => o.id === selectedOrder.id)?.pricing?.total || 0)}</span>
+            </div>
+            <div style={{ marginTop: '12px', display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+              {selectedOrder.status === 'pending' && (
+                <button
+                  onClick={() => sendCustomerConfirmation(orders.find(o => o.id === selectedOrder.id))}
+                  className="btn-success"
+                  style={{ padding: '8px 14px', fontSize: '13px' }}
+                >
+                  📱 إرسال تأكيد للعميل
+                </button>
+              )}
+              {selectedOrder.status === 'picked_up' && (
+                <button
+                  onClick={() => sendDriverNotification(orders.find(o => o.id === selectedOrder.id))}
+                  className="btn-primary"
+                  style={{ padding: '8px 14px', fontSize: '13px' }}
+                >
+                  🚚 إشعار العميل بوصول السائق
+                </button>
+              )}
+              <button onClick={() => setSelectedOrder(null)} className="btn-secondary">إغلاق</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

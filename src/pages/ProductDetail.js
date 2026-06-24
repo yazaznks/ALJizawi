@@ -36,6 +36,20 @@ const ProductDetail = () => {
     }
   };
 
+  // Compute media list based on selected size
+  const getMediaForSelectedSize = () => {
+    if (!product || !product.images) return [];
+    if (!product.sizes || product.sizes.length === 0) return product.images;
+    const sizeName = selectedSize ? selectedSize.name : null;
+    if (!sizeName) return product.images;
+    const general = product.images.filter(img => {
+      const tag = product.imageSizes?.[img.url];
+      return tag === undefined || tag === 'all';
+    });
+    const specific = product.images.filter(img => product.imageSizes?.[img.url] === sizeName);
+    return [...general, ...specific];
+  };
+
   // Find an active offer where this product is the "buy" product
   const buyOffer = product ? offers.find(o => {
     if (!o.active) return false;
@@ -213,8 +227,8 @@ const ProductDetail = () => {
       {loading && <div className="loading" style={{padding: '10px'}}>{t('loadingProduct')}</div>}
       <div className="card" style={{maxWidth: '600px', margin: '0 auto', overflow: 'hidden'}}>
         {/* Media Gallery with fullscreen viewer */}
-        {product.images && product.images.length > 0 ? (
-          <MediaGallery media={product.images} productName={product.name} />
+        {getMediaForSelectedSize().length > 0 ? (
+          <MediaGallery media={getMediaForSelectedSize()} productName={product.name} />
         ) : (
           <div className="product-image" style={{width: '100%', height: '300px', borderRadius: '8px 8px 0 0'}}>
             <span>{t('noImage')}</span>
