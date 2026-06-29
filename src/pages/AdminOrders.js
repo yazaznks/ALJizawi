@@ -760,7 +760,8 @@ const encodedText = encodeURIComponent(message);
               <h3 style={{fontSize: '18px', marginBottom: '10px', borderBottom: '2px solid #eee', paddingBottom: '8px'}}>معلومات العميل</h3>
               <table style={{width: '100%', borderCollapse: 'collapse'}}>
                 <tbody>
-                  <tr><td style={{padding: '6px 10px', fontWeight: '600', width: '120px'}}>الاسم:</td><td style={{padding: '6px 10px'}}>{selectedOrder.customerInfo?.name}</td></tr>
+                    <tr><td style={{padding: '6px 10px', fontWeight: '600', width: '120px'}}>الاسم:</td><td style={{padding: '6px 10px'}}>{selectedOrder.customerInfo?.name}</td></tr>
+                    <tr><td style={{padding: '6px 10px', fontWeight: '600'}}>رقم الهاتف:</td><td style={{padding: '6px 10px', direction: 'ltr', textAlign: 'left'}}>{normalizePhoneDisplay(selectedOrder.customerInfo?.phone)}</td></tr>
                   {selectedOrder.driverPhone && (
                     <tr><td style={{padding: '6px 10px', fontWeight: '600'}}>رقم السائق:</td><td style={{padding: '6px 10px', direction: 'ltr', textAlign: 'left'}}>{normalizePhoneDisplay(selectedOrder.driverPhone)}</td></tr>
                   )}
