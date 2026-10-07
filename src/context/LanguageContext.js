@@ -53,6 +53,8 @@ const translations = {
     delete: 'حذف',
     active: 'نشط',
     inactive: 'غير نشط',
+    hide: 'إخفاء',
+    show: 'إظهار',
     
     // Messages
     deleteConfirm: 'هل تريد حذف هذا المنتج؟',
@@ -216,6 +218,8 @@ const translations = {
     delete: 'Delete',
     active: 'Active',
     inactive: 'Inactive',
+    hide: 'Hide',
+    show: 'Show',
     
     // Messages
     deleteConfirm: 'Delete this product?',

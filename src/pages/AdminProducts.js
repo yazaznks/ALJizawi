@@ -7,7 +7,7 @@ import AdminNav from '../components/AdminNav';
 
 const AdminProducts = () => {
   const { t, formatCurrency } = useLanguage();
-  const { products, loading, hasMore, loadProducts, createProduct, updateProduct, deleteProduct } = useProducts();
+  const { products, loading, hasMore, loadProducts, createProduct, updateProduct, toggleProductActive, deleteProduct } = useProducts();
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [keptImages, setKeptImages] = useState([]);
@@ -32,6 +32,13 @@ const AdminProducts = () => {
       } else {
         alert(t('errorDeleting') + (result.message ? ': ' + result.message : ''));
       }
+    }
+  };
+
+  const handleToggleActive = async (product) => {
+    const result = await toggleProductActive(product.id);
+    if (!result.success) {
+      alert(t('errorUpdating') + (result.message ? ': ' + result.message : ''));
     }
   };
 
@@ -408,7 +415,7 @@ const AdminProducts = () => {
           </thead>
           <tbody>
             {products.map(product => (
-              <tr key={product._id}>
+              <tr key={product._id} style={{ opacity: product.active ? 1 : 0.55 }}>
                 <td>{product.name}</td>
                 <td>{product.category}</td>
                 <td>
@@ -422,6 +429,21 @@ const AdminProducts = () => {
                 <td>{product.active ? t('active') : t('inactive')}</td>
                 <td>
                   <button onClick={() => handleEdit(product)} className="btn-secondary" style={{padding: '5px 10px', marginRight: '5px'}}>{t('edit')}</button>
+                  <button
+                    onClick={() => handleToggleActive(product)}
+                    style={{
+                      padding: '5px 10px',
+                      marginRight: '5px',
+                      background: product.active ? '#fef3c7' : '#e0e7ff',
+                      border: `1px solid ${product.active ? '#fcd34d' : '#a5b4fc'}`,
+                      borderRadius: '6px',
+                      color: product.active ? '#92400e' : '#3730a3',
+                      fontWeight: '600',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {product.active ? t('hide') : t('show')}
+                  </button>
                   <button onClick={() => handleDelete(product.id, product._id)} className="btn-danger" style={{padding: '5px 10px'}}>{t('delete')}</button>
                 </td>
               </tr>

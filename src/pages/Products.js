@@ -461,16 +461,19 @@ const Products = () => {
   // Load offers for the offers section
   const { offers, loading: offersLoading } = useOffers();
   
+  // Products hidden from the storefront (active === false) are excluded everywhere below
+  const visibleProducts = products.filter(p => p.active);
+
   // Only active offers and matching existing products
   const activeOffers = offers.filter(o =>
     o.active &&
-    products.some(p => p._id === o.buyProductId) &&
-    products.some(p => p._id === o.getProductId)
+    visibleProducts.some(p => p._id === o.buyProductId) &&
+    visibleProducts.some(p => p._id === o.getProductId)
   );
 
   // Split products: featured first, then regular
-  const featured = products.filter(p => p.featured);
-  const regular = products.filter(p => !p.featured);
+  const featured = visibleProducts.filter(p => p.featured);
+  const regular = visibleProducts.filter(p => !p.featured);
   const regularShuffled = useMemo(() => {
     const arr = [...regular];
     if (arr.length === 0) return arr;
@@ -639,7 +642,7 @@ const Products = () => {
             <SkeletonCard key={i} />
           ))}
         </div>
-      ) : products.length === 0 ? (
+      ) : visibleProducts.length === 0 ? (
         <p style={{textAlign: 'center', padding: '40px'}}>{t('noProducts') || 'لا توجد منتجات'}</p>
       ) : (
         <>
@@ -894,7 +897,7 @@ const Products = () => {
                 جاري تحميل المزيد...
               </div>
             )}
-            {!hasMore && products.length > 0 && (
+            {!hasMore && visibleProducts.length > 0 && (
               <p style={{ color: '#999', fontSize: '14px' }}>لا يوجد مزيد من المنتجات</p>
             )}
           </div>

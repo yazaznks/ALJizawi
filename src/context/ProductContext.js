@@ -213,6 +213,23 @@ export const ProductProvider = ({ children }) => {
     }
   };
 
+  // Toggle product visibility (hide/show from storefront)
+  const toggleProductActive = async (firestoreId) => {
+    try {
+      const existingProduct = products.find(p => p.id === firestoreId);
+      if (!existingProduct) {
+        throw new Error('Product not found');
+      }
+      const newActive = !existingProduct.active;
+      await updateDoc(doc(db, 'ecommerce_products', firestoreId), { active: newActive });
+      setProducts(prev => prev.map(p => (p.id === firestoreId ? { ...p, active: newActive } : p)));
+      return { success: true, active: newActive };
+    } catch (error) {
+      console.error('Error toggling product visibility:', error);
+      return { success: false, message: error.message };
+    }
+  };
+
   // Get product by ID
   const getProduct = (id) => {
     return products.find(p => p._id === id && p.active);
@@ -290,6 +307,7 @@ export const ProductProvider = ({ children }) => {
     loadProducts,
     createProduct,
     updateProduct,
+    toggleProductActive,
     deleteProduct,
     getProduct,
     getProducts,
